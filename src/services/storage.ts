@@ -17,12 +17,12 @@ import {
   updateDoc 
 } from 'firebase/firestore';
 
-const RESERVATIONS_KEY = 'up_galpon_reservations_v2';
-const BLOCKED_DATES_KEY = 'up_galpon_blocked_dates_v2';
-const BRANCHES_KEY = 'up_galpon_branches_v2';
-const USERS_KEY = 'up_galpon_users_v2';
-const INQUIRIES_KEY = 'up_galpon_inquiries_v2';
-const AUTH_USER_KEY = 'up_galpon_auth_user_v2';
+const RESERVATIONS_KEY = 'up_galpon_reservations_v3';
+const BLOCKED_DATES_KEY = 'up_galpon_blocked_dates_v3';
+const BRANCHES_KEY = 'up_galpon_branches_v3';
+const USERS_KEY = 'up_galpon_users_v3';
+const INQUIRIES_KEY = 'up_galpon_inquiries_v3';
+const AUTH_USER_KEY = 'up_galpon_auth_user_v3';
 
 // Helper to remove any undefined fields before Firestore operations
 const sanitizeForFirestore = <T>(obj: T): T => {
@@ -664,6 +664,6 @@ export const syncWithRemoteFirestore = async (): Promise<void> => {
       if (remoteBookings.length > 0) saveReservations(remoteBookings);
     }
   } catch (e) {
-    console.log('Running with local high-speed storage & sync ready');
+    console.error('Error syncing with Firestore:', e);
   }
 };
