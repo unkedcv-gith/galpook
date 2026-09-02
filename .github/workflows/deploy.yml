@@ -34,5 +34,5 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT || 21 }}
           local-dir: ./dist/
-          server-dir: /domains/unke.com.ar/public_html/elgalpon/
+          server-dir: ${{ vars.SERVER_DIR || secrets.SERVER_DIR || '/domains/unke.com.ar/public_html/elgalpon/' }}
           dangerous-clean-slate: false
