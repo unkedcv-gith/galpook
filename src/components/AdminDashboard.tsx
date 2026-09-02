@@ -23,7 +23,10 @@ import {
   generateWaiverShareLink,
   formatDateDDMMAAAA,
   formatDateWithWeekday,
-  formatWhatsAppNumber
+  formatWhatsAppNumber,
+  syncWithRemoteFirestore,
+  listenToFirestoreBookings,
+  normalizeBranchId
 } from '../services/storage';
 import { ViewWaiverDocumentModal } from './ViewWaiverDocumentModal';
 import { ApproveDepositModal } from './ApproveDepositModal';
@@ -167,9 +170,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const [reservationToDelete, setReservationToDelete] = useState<Reservation | null>(null);
   const [appUserToEdit, setAppUserToEdit] = useState<AppUser | null>(null);
 
-  // Time Navigation & Weekly Filter
-  const [timeFilterMode, setTimeFilterMode] = useState<'weekly' | 'monthly' | 'all'>('weekly');
+  // Time Navigation & Filter - Default to 'all' so reservations are immediately visible
+  const [timeFilterMode, setTimeFilterMode] = useState<'weekly' | 'monthly' | 'all'>('all');
   const [currentWeekOffset, setCurrentWeekOffset] = useState<number>(0);
+  const [isSyncingFirebase, setIsSyncingFirebase] = useState(false);
+  const [syncStatusMsg, setSyncStatusMsg] = useState<string>('Sincronizado');
 
   const loadData = () => {
     const loadedBranches = getBranches();
@@ -190,8 +195,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     }
   };
 
+  const handleSyncFirestore = async () => {
+    setIsSyncingFirebase(true);
+    setSyncStatusMsg('Sincronizando...');
+    try {
+      await syncWithRemoteFirestore();
+      loadData();
+      setSyncStatusMsg(`Actualizado ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`);
+    } catch (e) {
+      console.warn('Sync notice:', e);
+      setSyncStatusMsg('Error de red');
+    } finally {
+      setIsSyncingFirebase(false);
+    }
+  };
+
   useEffect(() => {
     loadData();
+    handleSyncFirestore();
+
+    // Listen to real-time updates from Firestore bookings
+    const unsubFirestore = listenToFirestoreBookings((updated) => {
+      setReservations(updated);
+      setSyncStatusMsg(`En Vivo ${new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`);
+    });
+
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     
@@ -203,6 +231,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     return () => {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('storageUpdate', handleStorageUpdate);
+      if (unsubFirestore) unsubFirestore();
     };
   }, []);
 
@@ -270,10 +299,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   // Filtered reservations list
   const filteredReservations = useMemo(() => {
     return reservations.filter((r) => {
+      const rBranch = normalizeBranchId(r.branchId);
+
       if (isFranquista && currentUser?.assignedBranchId) {
-        if (r.branchId !== currentUser.assignedBranchId) return false;
+        const uBranch = normalizeBranchId(currentUser.assignedBranchId);
+        if (rBranch !== uBranch) return false;
       } else if (selectedBranchFilter !== 'all') {
-        if (r.branchId !== selectedBranchFilter) return false;
+        const fBranch = normalizeBranchId(selectedBranchFilter);
+        if (rBranch !== fBranch) return false;
       }
 
       // Time Filter Mode
@@ -319,11 +352,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   // Filtered inquiries list
   const filteredInquiries = useMemo(() => {
     return inquiries.filter((inq) => {
+      const inqBranch = normalizeBranchId(inq.branchId);
+
       if (isFranquista && currentUser?.assignedBranchId) {
-        return inq.branchId === currentUser.assignedBranchId;
+        const uBranch = normalizeBranchId(currentUser.assignedBranchId);
+        return inqBranch === uBranch;
       }
       if (selectedBranchFilter !== 'all') {
-        return inq.branchId === selectedBranchFilter;
+        const fBranch = normalizeBranchId(selectedBranchFilter);
+        return inqBranch === fBranch;
       }
       return true;
     });
@@ -514,8 +551,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
         </div>
 
         {/* Branch Switcher & Quick Actions */}
-        <div className="flex items-center gap-2.5 self-end md:self-auto">
+        <div className="flex items-center gap-2.5 self-end md:self-auto flex-wrap">
           
+          {/* Realtime Firebase Sync Badge & Button */}
+          <button
+            type="button"
+            onClick={handleSyncFirestore}
+            disabled={isSyncingFirebase}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 hover:text-white transition-all cursor-pointer shadow-sm"
+            title="Sincronizar manualmente con la base de datos de Firebase"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingFirebase ? 'animate-spin text-amber-400' : ''}`} />
+            <span className="font-bold text-[11px] uppercase tracking-wider">{syncStatusMsg}</span>
+          </button>
+
           <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs">
             <MapPin className="w-3.5 h-3.5 text-[#1EB8BF]" />
             {isFranquista ? (
@@ -921,26 +970,52 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
             {/* Indicador de estado superior asociado a DATOS/REQUISITOS FALTANTES    */}
             {/* ===================================================================== */}
             {filteredReservations.length === 0 ? (
-              <div className="bg-[#141721] border border-zinc-800 rounded-3xl p-12 text-center space-y-4">
-                <CalendarIcon className="w-10 h-10 text-zinc-600 mx-auto" />
-                <h3 className="font-heading font-black text-lg text-white uppercase">No hay fichas en este período</h3>
+              <div className="bg-[#141721] border border-zinc-800 rounded-3xl p-10 text-center space-y-4">
+                <CalendarIcon className="w-10 h-10 text-zinc-500 mx-auto" />
+                <h3 className="font-heading font-black text-lg text-white uppercase">
+                  {reservations.length > 0 ? 'No hay fichas con los filtros actuales' : 'No hay reservas registradas aún'}
+                </h3>
                 <p className="text-xs text-zinc-400 max-w-md mx-auto">
-                  {timeFilterMode === 'weekly'
-                    ? `No se encontraron reservas para la semana del ${currentWeekRange.label}. Podés cambiar de semana con los controles superiores o seleccionar otro filtro.`
-                    : 'No se encontraron reservas que coincidan con los filtros seleccionados.'}
+                  {reservations.length > 0 ? (
+                    <>
+                      Existen <strong className="text-amber-400">{reservations.length} reserva(s)</strong> en la base de datos de Firebase, pero están ocultas por los filtros activos (
+                      {timeFilterMode === 'weekly' ? 'Semanal' : timeFilterMode === 'monthly' ? 'Mensual' : ''}
+                      {selectedBranchFilter !== 'all' ? ` / Sucursal: ${selectedBranchFilter}` : ''}
+                      {filterStatus !== 'todos' ? ` / Estado: ${filterStatus}` : ''}
+                      ).
+                    </>
+                  ) : (
+                    'No se encontró ninguna reserva en el sistema. Podés sincronizar con la nube o crear una nueva ficha manualmente.'
+                  )}
                 </p>
-                {timeFilterMode === 'weekly' && currentWeekOffset !== 0 && (
-                  <div className="flex items-center justify-center pt-2">
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  {reservations.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setCurrentWeekOffset(0)}
-                      className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-black text-xs uppercase transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-md"
+                      onClick={() => {
+                        setTimeFilterMode('all');
+                        if (!isFranquista) setSelectedBranchFilter('all');
+                        setFilterStatus('todos');
+                        setSearchQuery('');
+                      }}
+                      className="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-black font-heading font-black text-xs uppercase transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-md"
                     >
-                      <Clock className="w-4 h-4" />
-                      <span>Volver a Esta Semana</span>
+                      <Filter className="w-4 h-4" />
+                      <span>Ver Todas las Reservas ({reservations.length})</span>
                     </button>
-                  </div>
-                )}
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleSyncFirestore}
+                    disabled={isSyncingFirebase}
+                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white font-black text-xs uppercase transition-colors inline-flex items-center gap-1.5 cursor-pointer border border-zinc-700"
+                  >
+                    <RefreshCw className={`w-4 h-4 text-emerald-400 ${isSyncingFirebase ? 'animate-spin' : ''}`} />
+                    <span>Sincronizar con Firebase</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <div className={`grid grid-cols-1 ${viewColumns === '2col' ? 'md:grid-cols-2' : 'grid-cols-1'} gap-5 items-stretch`}>

@@ -14,7 +14,8 @@ import {
   getDocs, 
   getDoc,
   deleteDoc, 
-  updateDoc 
+  updateDoc,
+  onSnapshot 
 } from 'firebase/firestore';
 
 const RESERVATIONS_KEY = 'up_galpon_reservations_v3';
@@ -27,6 +28,53 @@ const AUTH_USER_KEY = 'up_galpon_auth_user_v3';
 // Helper to remove any undefined fields before Firestore operations
 const sanitizeForFirestore = <T>(obj: T): T => {
   return JSON.parse(JSON.stringify(obj));
+};
+
+// Normalize branch identifiers across forms, database and user roles
+export const normalizeBranchId = (idOrName?: string): string => {
+  if (!idOrName) return 'calle-5';
+  const clean = String(idOrName).toLowerCase().trim();
+  if (clean === 'calle-5' || clean === 'calle 5' || clean === 'calle5' || clean.includes('calle 5') || clean.includes('calle-5') || clean.includes('5')) {
+    if (!clean.includes('13')) return 'calle-5';
+  }
+  if (clean === 'calle-13' || clean === 'calle 13' || clean === 'calle13' || clean.includes('calle 13') || clean.includes('calle-13') || clean.includes('13')) {
+    return 'calle-13';
+  }
+  return clean;
+};
+
+// Robust parser to ensure all bookings from Firestore map properly
+export const parseReservationFromFirestore = (d: any): Reservation => {
+  const data = (d && typeof d.data === 'function' ? d.data() : d || {}) as Record<string, any>;
+  const rawId = data.id || (d && d.id) || `res_${Date.now().toString(36)}`;
+  const branchId = normalizeBranchId(data.branchId || (data.branch && data.branch.id) || (data.branchName && data.branchName.includes('13') ? 'calle-13' : 'calle-5'));
+  const branchName = data.branchName || (branchId === 'calle-13' ? 'El Galpón Calle 13' : 'El Galpón Calle 5');
+  const date = data.date || new Date().toISOString().split('T')[0];
+
+  return {
+    ...data,
+    id: rawId,
+    branchId,
+    branchName,
+    date,
+    monthKey: data.monthKey || date.substring(0, 7),
+    slotId: data.slotId || 'turn_afternoon_1',
+    slotTime: data.slotTime || '15:00 a 17:30 hs',
+    parentName: data.parentName || data.name || 'Cliente',
+    parentPhone: data.parentPhone || data.phone || '',
+    parentEmail: data.parentEmail || data.email || '',
+    childName: data.childName || 'Cumpleañer@',
+    childAge: Number(data.childAge) || 6,
+    estimatedKids: Number(data.estimatedKids) || 0,
+    status: data.status || 'pending',
+    depositPaid: Boolean(data.depositPaid),
+    depositAmount: Number(data.depositAmount) || 0,
+    waiverStatus: data.waiverStatus || 'pending',
+    createdAt: data.createdAt || new Date().toISOString(),
+    notes: data.notes || '',
+    additionalPackage: data.additionalPackage || 'base_20',
+    adultsFoodInfo: data.adultsFoodInfo || '',
+  } as Reservation;
 };
 
 // -------------------------------------------------------------
@@ -694,7 +742,9 @@ export const syncWithRemoteFirestore = async (): Promise<void> => {
     const bookingsSnapshot = await getDocs(collection(db, 'bookings'));
     const remoteBookings: Reservation[] = [];
     if (!bookingsSnapshot.empty) {
-      bookingsSnapshot.forEach((d) => remoteBookings.push(d.data() as Reservation));
+      bookingsSnapshot.forEach((d) => {
+        remoteBookings.push(parseReservationFromFirestore(d));
+      });
     }
 
     const localBookings = getReservations();
@@ -702,9 +752,61 @@ export const syncWithRemoteFirestore = async (): Promise<void> => {
     localBookings.forEach((b) => bookingMap.set(b.id, b));
     remoteBookings.forEach((b) => bookingMap.set(b.id, b));
 
-    const mergedBookings = Array.from(bookingMap.values());
+    const mergedBookings = Array.from(bookingMap.values()).sort(
+      (a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()
+    );
     saveReservations(mergedBookings);
+
+    // 4. Sync Inquiries / Consultas Web
+    const inquiriesSnapshot = await getDocs(collection(db, 'inquiries'));
+    if (!inquiriesSnapshot.empty) {
+      const remoteInquiries: Inquiry[] = [];
+      inquiriesSnapshot.forEach((d) => {
+        const data = d.data() as Inquiry;
+        remoteInquiries.push({ ...data, id: data.id || d.id });
+      });
+      const localInquiries = getInquiries();
+      const inqMap = new Map<string, Inquiry>();
+      localInquiries.forEach((i) => inqMap.set(i.id, i));
+      remoteInquiries.forEach((i) => inqMap.set(i.id, i));
+      saveInquiries(Array.from(inqMap.values()));
+    }
   } catch (e) {
     console.warn('Firestore sync notice (running on local storage):', e);
+  }
+};
+
+// -------------------------------------------------------------
+// FIRESTORE REAL-TIME SUBSCRIPTIONS
+// -------------------------------------------------------------
+export const listenToFirestoreBookings = (onUpdate?: (bookings: Reservation[]) => void) => {
+  try {
+    const unsub = onSnapshot(
+      collection(db, 'bookings'),
+      (snapshot) => {
+        const remoteBookings: Reservation[] = [];
+        snapshot.forEach((d) => {
+          remoteBookings.push(parseReservationFromFirestore(d));
+        });
+
+        const localBookings = getReservations();
+        const bookingMap = new Map<string, Reservation>();
+        localBookings.forEach((b) => bookingMap.set(b.id, b));
+        remoteBookings.forEach((b) => bookingMap.set(b.id, b));
+
+        const merged = Array.from(bookingMap.values()).sort(
+          (a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime()
+        );
+        saveReservations(merged);
+        if (onUpdate) onUpdate(merged);
+      },
+      (err) => {
+        console.warn('Firestore onSnapshot error on bookings:', err);
+      }
+    );
+    return unsub;
+  } catch (err) {
+    console.warn('Firestore listen bookings init notice:', err);
+    return () => {};
   }
 };
