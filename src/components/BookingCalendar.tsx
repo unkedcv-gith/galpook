@@ -60,7 +60,6 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const [parentEmail, setParentEmail] = useState('');
   const [childName, setChildName] = useState('');
   const [childAge, setChildAge] = useState(6);
-  const [estimatedKids, setEstimatedKids] = useState(20);
   const [additionalPackage, setAdditionalPackage] = useState<'base_20' | 'adicional_21_28' | 'adicional_29_35'>('base_20');
   const [adultsFoodInfo, setAdultsFoodInfo] = useState('');
   const [notes, setNotes] = useState('');
@@ -83,7 +82,6 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   // Sync kids with package selection
   const handleKidsCountChange = (count: number) => {
-    setEstimatedKids(count);
     if (count <= 20) {
       setAdditionalPackage('base_20');
     } else if (count <= 28) {
@@ -93,14 +91,38 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }
   };
 
-  // Get current bookings & blocked dates for the selected branch
+  // Reactive reservations & blocked dates State
+  const [allReservations, setAllReservations] = useState<Reservation[]>([]);
+  const [allBlockedDates, setAllBlockedDates] = useState<ReturnType<typeof getBlockedDates>>([]);
+
+  const loadData = () => {
+    setAllReservations(getReservations());
+    setAllBlockedDates(getBlockedDates());
+  };
+
+  useEffect(() => {
+    loadData();
+    const handleStorageUpdate = () => {
+      loadData();
+    };
+    window.addEventListener('storageUpdate', handleStorageUpdate);
+    window.addEventListener('storage', handleStorageUpdate);
+    return () => {
+      window.removeEventListener('storageUpdate', handleStorageUpdate);
+      window.removeEventListener('storage', handleStorageUpdate);
+    };
+  }, []);
+
+  // Filter current bookings & blocked dates for the selected branch
   const reservations = useMemo(() => {
-    return getReservations(selectedBranchId);
-  }, [selectedBranchId, submittedReservation]);
+    if (!selectedBranchId || selectedBranchId === 'all') return allReservations;
+    return allReservations.filter((r) => r.branchId === selectedBranchId);
+  }, [allReservations, selectedBranchId, submittedReservation]);
 
   const blockedDates = useMemo(() => {
-    return getBlockedDates(selectedBranchId);
-  }, [selectedBranchId]);
+    if (!selectedBranchId || selectedBranchId === 'all') return allBlockedDates;
+    return allBlockedDates.filter((b) => !b.branchId || b.branchId === selectedBranchId || b.branchId === 'all');
+  }, [allBlockedDates, selectedBranchId]);
 
   // Calendar calculations
   const year = currentDate.getFullYear();
@@ -191,7 +213,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
         parentEmail,
         childName,
         childAge,
-        estimatedKids,
+        estimatedKids: 0,
         additionalPackage,
         adultsFoodInfo,
         notes,
@@ -224,7 +246,6 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setParentEmail('');
     setChildName('');
     setChildAge(6);
-    setEstimatedKids(20);
     setNotes('');
   };
 
@@ -290,10 +311,6 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
               <div className="flex justify-between border-b border-zinc-800 pb-2">
                 <span className="text-zinc-400 font-bold uppercase">Adulto Responsable:</span>
                 <span className="text-white font-medium">{submittedReservation.parentName} ({submittedReservation.parentPhone})</span>
-              </div>
-              <div className="flex justify-between border-b border-zinc-800 pb-2">
-                <span className="text-zinc-400 font-bold uppercase">Invitados Estimados:</span>
-                <span className="text-white font-medium">{submittedReservation.estimatedKids} chicos</span>
               </div>
               <div className="flex justify-between pt-1">
                 <span className="text-zinc-400 font-bold uppercase">Estado:</span>

@@ -28,12 +28,15 @@ export const EditAppUserModal: React.FC<EditAppUserModalProps> = ({ isOpen, user
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
+    const payload: Partial<AppUser> = {
       displayName: displayName.trim(),
       username: username.trim().toLowerCase(),
-      password: password.trim(),
       email: email.trim()
-    });
+    };
+    if (password.trim()) {
+      payload.password = password.trim();
+    }
+    onSave(payload);
   };
 
   return (

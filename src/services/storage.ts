@@ -650,20 +650,61 @@ export const toggleBlockDate = (
 // -------------------------------------------------------------
 export const syncWithRemoteFirestore = async (): Promise<void> => {
   try {
+    // 1. Sync Branches
     const branchesSnapshot = await getDocs(collection(db, 'branches'));
     if (!branchesSnapshot.empty) {
       const remoteBranches: Branch[] = [];
       branchesSnapshot.forEach((d) => remoteBranches.push(d.data() as Branch));
-      if (remoteBranches.length > 0) saveBranches(remoteBranches);
+      if (remoteBranches.length > 0) {
+        const localBranches = getBranches();
+        const mergedBranchesMap = new Map<string, Branch>();
+        localBranches.forEach(b => mergedBranchesMap.set(b.id, b));
+        remoteBranches.forEach(b => mergedBranchesMap.set(b.id, b));
+        saveBranches(Array.from(mergedBranchesMap.values()));
+      }
+    } else {
+      // Seed initial branches to Firestore
+      const initial = getBranches();
+      for (const b of initial) {
+        setDoc(doc(db, 'branches', b.id), sanitizeForFirestore(b)).catch(() => {});
+      }
     }
 
-    const bookingsSnapshot = await getDocs(collection(db, 'bookings'));
-    if (!bookingsSnapshot.empty) {
-      const remoteBookings: Reservation[] = [];
-      bookingsSnapshot.forEach((d) => remoteBookings.push(d.data() as Reservation));
-      if (remoteBookings.length > 0) saveReservations(remoteBookings);
+    // 2. Sync App Users (SuperAdmin, Admin, Franquistas)
+    const usersSnapshot = await getDocs(collection(db, 'users'));
+    if (!usersSnapshot.empty) {
+      const remoteUsers: AppUser[] = [];
+      usersSnapshot.forEach((d) => remoteUsers.push(d.data() as AppUser));
+      if (remoteUsers.length > 0) {
+        const localUsers = getAppUsers();
+        const userMap = new Map<string, AppUser>();
+        localUsers.forEach(u => userMap.set(u.uid, u));
+        remoteUsers.forEach(u => userMap.set(u.uid, u));
+        saveAppUsers(Array.from(userMap.values()));
+      }
+    } else {
+      // First time: Seed initial admin & superadmin users to Firestore collection 'users'
+      const initialUsers = getAppUsers();
+      for (const user of initialUsers) {
+        setDoc(doc(db, 'users', user.uid), sanitizeForFirestore(user)).catch(() => {});
+      }
     }
+
+    // 3. Sync Bookings / Reservas
+    const bookingsSnapshot = await getDocs(collection(db, 'bookings'));
+    const remoteBookings: Reservation[] = [];
+    if (!bookingsSnapshot.empty) {
+      bookingsSnapshot.forEach((d) => remoteBookings.push(d.data() as Reservation));
+    }
+
+    const localBookings = getReservations();
+    const bookingMap = new Map<string, Reservation>();
+    localBookings.forEach((b) => bookingMap.set(b.id, b));
+    remoteBookings.forEach((b) => bookingMap.set(b.id, b));
+
+    const mergedBookings = Array.from(bookingMap.values());
+    saveReservations(mergedBookings);
   } catch (e) {
-    console.error('Error syncing with Firestore:', e);
+    console.warn('Firestore sync notice (running on local storage):', e);
   }
 };

@@ -153,6 +153,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserUsername, setNewUserUsername] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<UserRole>('franquista');
   const [newUserBranchId, setNewUserBranchId] = useState('');
   const [isAddingUser, setIsAddingUser] = useState(false);
@@ -440,6 +441,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
       displayName: newUserName,
       username: newUserUsername.toLowerCase().trim(),
       email: newUserEmail || `${newUserUsername.toLowerCase().trim()}@elgalpon.com`,
+      password: newUserPassword.trim() || undefined,
       role: newUserRole,
       assignedBranchId: newUserRole === 'franquista' ? newUserBranchId : undefined,
       assignedBranchName: newUserRole === 'franquista' ? assignedBranch?.name : undefined,
@@ -449,6 +451,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     setNewUserName('');
     setNewUserUsername('');
     setNewUserEmail('');
+    setNewUserPassword('');
     setIsAddingUser(false);
     loadData();
   };
@@ -1690,6 +1693,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       placeholder="Ej: franquicia20"
                       value={newUserUsername}
                       onChange={(e) => setNewUserUsername(e.target.value)}
+                      className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-zinc-300 uppercase">Email (Opcional)</label>
+                    <input
+                      type="email"
+                      placeholder="Ej: usuario@elgalpon.com"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-zinc-300 uppercase">Contraseña Personalizada</label>
+                    <input
+                      type="text"
+                      placeholder="Ej: clave1234 (o dejar vacío para default)"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
                       className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white"
                     />
                   </div>

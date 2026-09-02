@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production build outputs
+dist/
+build/
+out/
+
+# AI Studio and local dev internal directories
+.aistudio/
+.system_generated/
+*.local
+
+# Environment files
+.env
+.env*.local
+!.env.example
+
+# Logs and OS files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
