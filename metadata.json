@@ -1,0 +1,6 @@
+{
+  "name": "El Galpón | Espacio Recreativo",
+  "description": "Sitio oficial de El Galpón: Fiestas de cumpleaños infantiles con reserva online, talleres deportivos, espacio por un día y panel de administración.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

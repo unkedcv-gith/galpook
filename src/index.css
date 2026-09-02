@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: #000000;
+    color: #ffffff;
+  }
+
+  h1, .font-bangers {
+    font-family: 'Bangers', cursive, sans-serif;
+    letter-spacing: 0.04em;
+  }
+
+  h2, h3, .font-heading {
+    font-family: 'Open Sans', sans-serif;
+  }
+}
+
+/* Brand Palette Variables */
+:root {
+  --brand-black: #000000;
+  --brand-turquesa: #1eb8bf;
+  --brand-magenta: #ed3078;
+  --brand-lima: #a3ba13;
+  --brand-amarillo: #f2c700;
+  --brand-blanco: #ffffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: #1eb8bf;
+  border-radius: 9999px;
+  border: 2px solid #000000;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ed3078;
+}
+
+/* Retro-pop geometric grid background pattern */
+.bg-retro-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+.bg-retro-dots {
+  background-image: radial-gradient(rgba(30, 184, 191, 0.18) 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
+}
+
+/* Pop shadow effects */
+.pop-shadow-turquesa {
+  box-shadow: 4px 4px 0px 0px #1eb8bf;
+}
+.pop-shadow-magenta {
+  box-shadow: 4px 4px 0px 0px #ed3078;
+}
+.pop-shadow-amarillo {
+  box-shadow: 4px 4px 0px 0px #f2c700;
+}
+.pop-shadow-lima {
+  box-shadow: 4px 4px 0px 0px #a3ba13;
+}
+
+/* Continuous slow marquee gallery */
+@keyframes slowGalleryMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-slow-gallery {
+  display: flex;
+  width: max-content;
+  animation: slowGalleryMarquee 40s linear infinite;
+}
+
+.animate-slow-gallery:hover {
+  animation-play-state: paused;
+}
+
+@media (max-width: 640px) {
+  .animate-slow-gallery {
+    animation-duration: 28s;
+  }
+}
+
+
+
