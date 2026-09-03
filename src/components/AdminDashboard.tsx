@@ -656,17 +656,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
               </span>
             </button>
 
-            <button
-              onClick={() => setActiveTab('bloqueo')}
-              className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                activeTab === 'bloqueo'
-                  ? 'bg-[#ED3078] text-white shadow-md'
-                  : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
-              }`}
-            >
-              <Lock className="w-4 h-4 shrink-0" />
-              <span className="truncate">Bloqueos</span>
-            </button>
+            {/* BLOQUEOS: Hidden for Admin Dueño General */}
+            {currentUser?.role !== 'admin' && (
+              <button
+                onClick={() => setActiveTab('bloqueo')}
+                className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'bloqueo'
+                    ? 'bg-[#ED3078] text-white shadow-md'
+                    : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
+                }`}
+              >
+                <Lock className="w-4 h-4 shrink-0" />
+                <span className="truncate">Bloqueos</span>
+              </button>
+            )}
 
             <button
               onClick={() => setActiveTab('nueva')}
@@ -682,22 +685,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
             {/* SUPERADMIN / ADMIN BUTTONS */}
             {isSuperAdmin && (
-              <>
-                <button
-                  onClick={() => setActiveTab('sucursales')}
-                  className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    activeTab === 'sucursales'
-                      ? 'bg-[#ED3078] text-white shadow-md'
-                      : 'bg-black/40 border border-[#ED3078]/40 text-[#ED3078] hover:bg-[#ED3078]/10'
-                  }`}
-                >
-                  <Store className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Franquicias</span>
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-white/20 text-white">
-                    {branches.length}
-                  </span>
-                </button>
+              <button
+                onClick={() => setActiveTab('sucursales')}
+                className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'sucursales'
+                    ? 'bg-[#ED3078] text-white shadow-md'
+                    : 'bg-black/40 border border-[#ED3078]/40 text-[#ED3078] hover:bg-[#ED3078]/10'
+                }`}
+              >
+                <Store className="w-4 h-4 shrink-0" />
+                <span className="truncate">Franquicias</span>
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-white/20 text-white">
+                  {branches.length}
+                </span>
+              </button>
+            )}
 
+            {/* SUPERADMIN ONLY BUTTONS */}
+            {isSuperAdminOnly && (
+              <>
                 <button
                   onClick={() => setActiveTab('usuarios')}
                   className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
@@ -709,22 +715,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   <Users className="w-4 h-4 shrink-0" />
                   <span className="truncate">Usuarios</span>
                 </button>
-              </>
-            )}
 
-            {isSuperAdminOnly && (
-              <button
-                onClick={() => setActiveTab('backup')}
-                className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                  activeTab === 'backup'
-                    ? 'bg-emerald-400 text-black shadow-md'
-                    : 'bg-black/40 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
-                }`}
-                title="Copias de Seguridad y Backups de Base de Datos"
-              >
-                <Database className="w-4 h-4 shrink-0" />
-                <span className="truncate">Backups</span>
-              </button>
+                <button
+                  onClick={() => setActiveTab('backup')}
+                  className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    activeTab === 'backup'
+                      ? 'bg-emerald-400 text-black shadow-md'
+                      : 'bg-black/40 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+                  }`}
+                  title="Copias de Seguridad y Backups de Base de Datos"
+                >
+                  <Database className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Backups</span>
+                </button>
+              </>
             )}
 
           </div>
@@ -1433,7 +1437,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
         {/* ========================================================================= */}
         {/* TAB 3: BLOQUEO DE FECHAS                                                  */}
         {/* ========================================================================= */}
-        {activeTab === 'bloqueo' && (
+        {currentUser?.role !== 'admin' && activeTab === 'bloqueo' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4">
               <h3 className="font-heading font-black text-lg text-white uppercase flex items-center gap-2">
@@ -1646,12 +1650,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                 <p className="text-xs text-zinc-400">Escala el negocio añadiendo nuevas sucursales y franquistas</p>
               </div>
 
-              <button
-                onClick={() => setIsAddingBranch(!isAddingBranch)}
-                className="px-3.5 py-2 rounded-xl bg-[#ED3078] text-white font-black text-xs uppercase flex items-center gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Nueva Sucursal
-              </button>
+              {isSuperAdminOnly && (
+                <button
+                  onClick={() => setIsAddingBranch(!isAddingBranch)}
+                  className="px-3.5 py-2 rounded-xl bg-[#ED3078] text-white font-black text-xs uppercase flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> Nueva Sucursal
+                </button>
+              )}
             </div>
 
             {/* New Branch Form Drawer */}
@@ -1764,7 +1770,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
         {/* ========================================================================= */}
         {/* TAB 6 (SUPERADMIN): GESTIÓN DE USUARIOS Y CONTROL DE ACCESO              */}
         {/* ========================================================================= */}
-        {isSuperAdmin && activeTab === 'usuarios' && (
+        {isSuperAdminOnly && activeTab === 'usuarios' && (
           <div className="space-y-6">
             
             <div className="flex items-center justify-between bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
