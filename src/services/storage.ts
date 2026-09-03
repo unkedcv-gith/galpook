@@ -89,8 +89,8 @@ export const getBranches = (): Branch[] => {
     }
     const list: Branch[] = JSON.parse(data);
     const updated = list.map((b) => {
-      if (b.whatsappNumber === '5492215731047' || b.whatsappNumber === '5492214893221' || !b.whatsappNumber) {
-        return { ...b, phone: '221 610-5296', whatsappNumber: '5492216105296' };
+      if (b.whatsappNumber === '5492216105296' || b.whatsappNumber === '5492214893221' || !b.whatsappNumber) {
+        return { ...b, phone: '221 573-1047', whatsappNumber: '5492215731047' };
       }
       return b;
     });

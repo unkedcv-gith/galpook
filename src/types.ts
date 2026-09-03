@@ -7,8 +7,8 @@ export interface Branch {
   name: string; // "El Galpón Calle 5"
   address: string; // "Calle 5 e/ 58 y 59"
   city: string; // "La Plata"
-  phone: string; // "+54 9 221 610-5296"
-  whatsappNumber: string; // "5492216105296"
+  phone: string; // "+54 9 221 573-1047"
+  whatsappNumber: string; // "5492215731047"
   franquistaUserId?: string;
   franquistaName?: string;
   franquistaEmail?: string;

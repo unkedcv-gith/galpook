@@ -810,7 +810,7 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
                           required
                           value={signerPhone}
                           onChange={(e) => setSignerPhone(e.target.value)}
-                          placeholder="Ej: 221 610-5296"
+                          placeholder="Ej: 221 573-1047"
                           className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
                         />
                       </div>
@@ -918,7 +918,7 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
                           required
                           value={emergencyContactPhone}
                           onChange={(e) => setEmergencyContactPhone(e.target.value)}
-                          placeholder="Ej: 221 610-5296"
+                          placeholder="Ej: 221 573-1047"
                           className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
                         />
                       </div>
