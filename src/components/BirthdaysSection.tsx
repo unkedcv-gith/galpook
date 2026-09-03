@@ -16,7 +16,6 @@ import {
   Laugh,
 } from 'lucide-react';
 import { AttractionsGallery } from './AttractionsGallery';
-import { BranchComparisonModal } from './BranchComparisonModal';
 
 interface BirthdaysSectionProps {
   onOpenBooking: () => void;
@@ -45,8 +44,6 @@ const getAttractionIcon = (iconName: string, id: string) => {
 export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
   onOpenBooking,
 }) => {
-  const [isComparisonOpen, setIsComparisonOpen] = React.useState(false);
-
   return (
     <section id="cumpleanos" className="w-full bg-gradient-to-b from-black via-[#ED3078] via-35% to-[#1EB8BF] text-white py-16 sm:py-24 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
@@ -194,36 +191,6 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
 
           {/* Dynamic Slow Scrolling Photo Gallery */}
           <AttractionsGallery />
-        </div>
-
-        {/* Branches Comparison Banner */}
-        <div className="pt-8">
-          <div 
-            onClick={() => setIsComparisonOpen(true)}
-            className="bg-black/60 border-2 border-[#F2C700] backdrop-blur-md rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-[0_0_20px_rgba(242,199,0,0.2)] hover:bg-black/80 hover:scale-[1.02] transition-all cursor-pointer"
-          >
-            <div>
-              <h3 className="font-heading font-black text-white text-xl uppercase flex items-center gap-2">
-                <span className="w-2.5 h-6 bg-[#F2C700] rounded-full inline-block" />
-                ¿Qué incluye cada sucursal?
-              </h3>
-              <p className="text-sm text-zinc-300 font-medium mt-1">
-                Las atracciones y capacidades varían entre Calle 5 y Calle 13.
-              </p>
-            </div>
-            <button className="whitespace-nowrap bg-[#F2C700] hover:bg-white text-black font-black text-xs uppercase px-6 py-3 rounded-xl transition-all shadow-md w-full sm:w-auto">
-              Ver Comparativa
-            </button>
-          </div>
-        </div>
-
-        <div className="flex justify-center pt-8">
-          <button
-            onClick={onOpenBooking}
-            className="bg-[#ED3078] hover:bg-[#d62166] text-white font-black text-sm uppercase tracking-wider px-8 py-4 rounded-2xl transition-all cursor-pointer shadow-lg hover:scale-105"
-          >
-            Reservar Cumpleaños
-          </button>
         </div>
 
       </div>
