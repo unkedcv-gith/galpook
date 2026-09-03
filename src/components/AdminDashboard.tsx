@@ -680,7 +680,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
               <span className="truncate">Carga Manual</span>
             </button>
 
-            {/* SUPERADMIN BUTTONS */}
+            {/* SUPERADMIN / ADMIN BUTTONS */}
             {isSuperAdmin && (
               <>
                 <button
@@ -709,20 +709,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   <Users className="w-4 h-4 shrink-0" />
                   <span className="truncate">Usuarios</span>
                 </button>
-
-                <button
-                  onClick={() => setActiveTab('backup')}
-                  className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                    activeTab === 'backup'
-                      ? 'bg-emerald-400 text-black shadow-md'
-                      : 'bg-black/40 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
-                  }`}
-                  title="Copias de Seguridad y Backups de Base de Datos"
-                >
-                  <Database className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Backups</span>
-                </button>
               </>
+            )}
+
+            {isSuperAdminOnly && (
+              <button
+                onClick={() => setActiveTab('backup')}
+                className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  activeTab === 'backup'
+                    ? 'bg-emerald-400 text-black shadow-md'
+                    : 'bg-black/40 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+                }`}
+                title="Copias de Seguridad y Backups de Base de Datos"
+              >
+                <Database className="w-4 h-4 shrink-0" />
+                <span className="truncate">Backups</span>
+              </button>
             )}
 
           </div>
@@ -852,7 +854,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     </button>
                   </div>
 
-                  {isSuperAdmin && (
+                  {isSuperAdminOnly && (
                     <button
                       type="button"
                       onClick={handleBackupDownload}
@@ -1976,7 +1978,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
         {/* ========================================================================= */}
         {/* TAB 7: COPIAS DE SEGURIDAD & BACKUP (SUPERADMIN)                          */}
         {/* ========================================================================= */}
-        {activeTab === 'backup' && isSuperAdmin && (
+        {activeTab === 'backup' && isSuperAdminOnly && (
           <div className="space-y-6">
             
             {/* Header Box */}
