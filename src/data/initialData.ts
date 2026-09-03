@@ -210,7 +210,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     id: 'faq_1',
     numberTag: '1',
-    question: '¿Por qué damos solo 1 pancho por chico?',
+    question: '¿Por qué damos solo 1 super pancho por chico?',
     answer: 'A diferencia de una casita de fiestas convencional donde comen sentados durante 40 minutos con animación pasiva, en El Galpón los chicos COMEN EN 10 MINUTOS. Si comieran más en tan poco tiempo y luego salieran a correr, saltar en camas elásticas y dar vueltas carnero, vomitarían o se sentirían mal. Priorizamos la salud y seguridad de los pekes.',
     category: 'cumpleanos',
     highlight: 'Cuidado gastrointestinal para juego activo',
