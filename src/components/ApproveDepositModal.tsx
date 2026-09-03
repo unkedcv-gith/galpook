@@ -12,7 +12,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Reservation } from '../types';
-import { generateWaiverShareLink, generateWaiverWhatsAppMessage, formatDateDDMMAAAA } from '../services/storage';
+import { generateWaiverShareLink, formatWhatsAppNumber, formatDateDDMMAAAA } from '../services/storage';
 
 interface ApproveDepositModalProps {
   isOpen: boolean;
@@ -31,10 +31,11 @@ export const ApproveDepositModal: React.FC<ApproveDepositModalProps> = ({
   if (!isOpen || !reservation) return null;
 
   const waiverUrl = generateWaiverShareLink(reservation.id);
-  const waUrl = generateWaiverWhatsAppMessage(reservation);
   const formattedDate = formatDateDDMMAAAA(reservation.date);
+  const cleanPhone = formatWhatsAppNumber(reservation.parentPhone);
 
-  const rawMessageText = `¡Hola ${reservation.parentName}! 👋 Confirmamos con éxito la recepción del pedido de reserva para el cumpleaños de *${reservation.childName}* el día *${formattedDate}* (${reservation.slotTime}) en *${reservation.branchName}* 🎪🎉.\n\nPara completar la habilitación del salón y el acceso a los juegos deportivos (muro de escalada, tirolesa, camas elásticas y circuitos acrobáticos), por favor completá y firmá el *Desligamiento de Responsabilidad y Ficha Médica* en este enlace seguro:\n\n👉 ${waiverUrl}\n\nQuedamos a disposición para cualquier consulta. ¡Nos vemos pronto para festejar! 🎈`;
+  const rawMessageText = `¡Hola ${reservation.parentName}! 👋 Confirmamos con éxito la reserva para el cumpleaños de *${reservation.childName}* el día *${formattedDate}* (${reservation.slotTime}). Quedamos a disposición para cualquier consulta. ¡Nos vemos pronto para festejar! 🎈`;
+  const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(rawMessageText)}`;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(waiverUrl);
@@ -63,7 +64,7 @@ export const ApproveDepositModal: React.FC<ApproveDepositModalProps> = ({
                 Seña Confirmada ($100.000)
               </span>
               <h3 className="font-heading font-black text-base text-white uppercase">
-                Notificar Términos y Condiciones
+                Confirmar Reserva al Cliente
               </h3>
             </div>
           </div>
