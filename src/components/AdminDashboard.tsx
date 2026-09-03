@@ -26,7 +26,9 @@ import {
   formatWhatsAppNumber,
   syncWithRemoteFirestore,
   listenToFirestoreBookings,
-  normalizeBranchId
+  normalizeBranchId,
+  downloadBackupAsJSON,
+  getLastBackupDate
 } from '../services/storage';
 import { ViewWaiverDocumentModal } from './ViewWaiverDocumentModal';
 import { ApproveDepositModal } from './ApproveDepositModal';
@@ -92,7 +94,9 @@ import {
   Columns,
   SlidersHorizontal,
   BadgeCheck,
-  Sparkle
+  Sparkle,
+  Download,
+  Database
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -110,7 +114,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
 
   // Navigation & Filter states
-  const [activeTab, setActiveTab] = useState<'reservas' | 'consultas' | 'bloqueo' | 'nueva' | 'sucursales' | 'usuarios'>('reservas');
+  const [activeTab, setActiveTab] = useState<'reservas' | 'consultas' | 'bloqueo' | 'nueva' | 'sucursales' | 'usuarios' | 'backup'>('reservas');
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('all');
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
@@ -175,6 +179,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const [currentWeekOffset, setCurrentWeekOffset] = useState<number>(0);
   const [isSyncingFirebase, setIsSyncingFirebase] = useState(false);
   const [syncStatusMsg, setSyncStatusMsg] = useState<string>('Sincronizado');
+  const [lastBackupTime, setLastBackupTime] = useState<string | null>(getLastBackupDate());
+  const [backupSuccessMsg, setBackupSuccessMsg] = useState(false);
 
   const loadData = () => {
     const loadedBranches = getBranches();
@@ -210,6 +216,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     }
   };
 
+  const handleBackupDownload = () => {
+    downloadBackupAsJSON();
+    setLastBackupTime(new Date().toISOString());
+    setBackupSuccessMsg(true);
+    setTimeout(() => setBackupSuccessMsg(false), 5000);
+  };
+
   useEffect(() => {
     loadData();
     handleSyncFirestore();
@@ -240,9 +253,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     onCloseAdmin();
   };
 
-  // Role permissions helpers
-  const isSuperAdmin = currentUser?.role === 'superadmin';
-  const isAdmin = currentUser?.role === 'admin' || isSuperAdmin;
+  // Role permissions helpers - Both Dueño General (admin) and superadmin have full access
+  const isSuperAdminOnly = currentUser?.role === 'superadmin';
+  const isAdmin = currentUser?.role === 'admin' || isSuperAdminOnly || !currentUser;
+  const isSuperAdmin = isAdmin; // Grants Backups, Franquicias, and User control to Dueño General
   const isFranquista = currentUser?.role === 'franquista';
 
   // Weekly Date Range (Monday to Sunday)
@@ -529,14 +543,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
               {/* Dynamic Role Badge */}
               <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-black uppercase flex items-center gap-1 ${
-                isSuperAdmin 
+                isSuperAdminOnly 
                   ? 'bg-[#ED3078] text-white shadow-[0_0_12px_rgba(237,48,120,0.5)]'
                   : isAdmin 
                   ? 'bg-[#F2C700] text-black shadow-[0_0_12px_rgba(242,199,0,0.4)]'
                   : 'bg-[#1EB8BF] text-black shadow-[0_0_12px_rgba(30,184,191,0.4)]'
               }`}>
-                {isSuperAdmin ? <Crown className="w-3 h-3" /> : isAdmin ? <Building2 className="w-3 h-3" /> : <Store className="w-3 h-3" />}
-                <span>{currentUser?.displayName || (isSuperAdmin ? 'SuperAdmin' : isAdmin ? 'Admin Dueño' : 'Franquista')}</span>
+                {isSuperAdminOnly ? <Crown className="w-3 h-3" /> : isAdmin ? <Building2 className="w-3 h-3" /> : <Store className="w-3 h-3" />}
+                <span>{currentUser?.displayName || (isSuperAdminOnly ? 'SuperAdmin' : isAdmin ? 'Admin Dueño' : 'Franquista')}</span>
               </span>
             </div>
             
@@ -695,6 +709,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   <Users className="w-4 h-4 shrink-0" />
                   <span className="truncate">Usuarios</span>
                 </button>
+
+                <button
+                  onClick={() => setActiveTab('backup')}
+                  className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    activeTab === 'backup'
+                      ? 'bg-emerald-400 text-black shadow-md'
+                      : 'bg-black/40 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+                  }`}
+                  title="Copias de Seguridad y Backups de Base de Datos"
+                >
+                  <Database className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Backups</span>
+                </button>
               </>
             )}
 
@@ -824,6 +851,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       <span>Todas</span>
                     </button>
                   </div>
+
+                  {isSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={handleBackupDownload}
+                      className="px-3.5 py-1.5 rounded-2xl bg-zinc-900 hover:bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-heading font-black uppercase transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                      title="Descargar copia de seguridad de la base de datos en formato JSON"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Backup JSON</span>
+                    </button>
+                  )}
 
                 </div>
 
@@ -1929,6 +1968,112 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   </div>
                 );
               })}
+            </div>
+
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 7: COPIAS DE SEGURIDAD & BACKUP (SUPERADMIN)                          */}
+        {/* ========================================================================= */}
+        {activeTab === 'backup' && isSuperAdmin && (
+          <div className="space-y-6">
+            
+            {/* Header Box */}
+            <div className="bg-[#0e1117] border-2 border-emerald-500/30 rounded-3xl p-6 relative overflow-hidden shadow-2xl space-y-4">
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 via-[#1EB8BF] to-amber-400" />
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                    <Database className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="font-heading font-black text-lg sm:text-xl text-white uppercase tracking-wide flex items-center gap-2">
+                      Centro de Copias de Seguridad (Backups)
+                    </h2>
+                    <p className="text-xs text-zinc-400">
+                      Resguardo integral sin costo para tu base de datos de Firebase (Plan Spark).
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleBackupDownload}
+                  className="px-5 py-3 rounded-2xl bg-emerald-400 hover:bg-emerald-300 text-black font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg cursor-pointer shrink-0"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Descargar Backup Ahora (.JSON)</span>
+                </button>
+              </div>
+
+              {backupSuccessMsg && (
+                <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>¡Copia de seguridad descargada exitosamente en tu computadora! Se guardó con la fecha actual.</span>
+                </div>
+              )}
+            </div>
+
+            {/* Stats & Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-5 space-y-2">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase">Último Backup Realizado</span>
+                <div className="font-heading font-black text-base text-amber-400 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-zinc-500" />
+                  <span>
+                    {lastBackupTime
+                      ? new Date(lastBackupTime).toLocaleDateString('es-AR') + ' ' + new Date(lastBackupTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+                      : 'Aún no realizado'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-400">
+                  Frecuencia sugerida: Cada 14 días (quincenal).
+                </p>
+              </div>
+
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-5 space-y-2">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase">Datos que incluye el respaldo</span>
+                <div className="font-heading font-black text-2xl text-white">
+                  {reservations.length} <span className="text-xs font-normal text-zinc-400">reservas</span> • {inquiries.length} <span className="text-xs font-normal text-zinc-400">consultas</span>
+                </div>
+                <p className="text-[11px] text-zinc-400">
+                  Incluye sucursales ({branches.length}) y usuarios gestores ({appUsers.length}).
+                </p>
+              </div>
+
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-3xl p-5 space-y-2">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase">Compatibilidad y Formato</span>
+                <div className="font-heading font-black text-base text-emerald-400 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>JSON Estructurado UTF-8</span>
+                </div>
+                <p className="text-[11px] text-zinc-400">
+                  Podés abrirlo con cualquier editor, archivarlo en Google Drive o restaurarlo.
+                </p>
+              </div>
+
+            </div>
+
+            {/* Instruction Card */}
+            <div className="bg-zinc-900/70 border border-zinc-800 rounded-3xl p-6 space-y-3">
+              <h3 className="font-heading font-black text-sm text-white uppercase tracking-wider flex items-center gap-2">
+                <Shield className="w-4 h-4 text-[#1EB8BF]" />
+                ¿Cómo mantener protegida la información del salón?
+              </h3>
+              <ul className="text-xs text-zinc-300 space-y-2 list-disc list-inside">
+                <li>
+                  <strong className="text-white">Al hacer clic en "Descargar Backup Ahora":</strong> Se generará un archivo comprimido de texto estructurado con el nombre <code className="text-amber-400 bg-black/40 px-1.5 py-0.5 rounded">backup_elgalpon_AAAA-MM-DD.json</code>.
+                </li>
+                <li>
+                  <strong className="text-white">Almacenamiento seguro:</strong> Te recomendamos subir este archivo a tu Google Drive personal o guardarlo en una carpeta de tu computadora cada dos semanas.
+                </li>
+                <li>
+                  <strong className="text-white">Independencia del Plan de Firebase:</strong> Esta herramienta te permite tener copias físicas en tu poder sin pagar servicios adicionales de Google Cloud.
+                </li>
+              </ul>
             </div>
 
           </div>

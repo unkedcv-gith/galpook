@@ -810,3 +810,64 @@ export const listenToFirestoreBookings = (onUpdate?: (bookings: Reservation[]) =
     return () => {};
   }
 };
+
+// -------------------------------------------------------------
+// BACKUP & RESTORE UTILITIES (SUPER ADMIN)
+// -------------------------------------------------------------
+export interface BackupData {
+  version: string;
+  timestamp: string;
+  dateFormatted: string;
+  reservationsCount: number;
+  inquiriesCount: number;
+  branchesCount: number;
+  usersCount: number;
+  reservations: Reservation[];
+  inquiries: Inquiry[];
+  branches: Branch[];
+  appUsers: AppUser[];
+}
+
+export const generateCompleteBackup = (): BackupData => {
+  const reservations = getReservations();
+  const inquiries = getInquiries();
+  const branches = getBranches();
+  const appUsers = getAppUsers();
+  const now = new Date();
+
+  return {
+    version: '1.0',
+    timestamp: now.toISOString(),
+    dateFormatted: now.toLocaleDateString('es-AR') + ' ' + now.toLocaleTimeString('es-AR'),
+    reservationsCount: reservations.length,
+    inquiriesCount: inquiries.length,
+    branchesCount: branches.length,
+    usersCount: appUsers.length,
+    reservations,
+    inquiries,
+    branches,
+    appUsers,
+  };
+};
+
+export const downloadBackupAsJSON = () => {
+  const backup = generateCompleteBackup();
+  const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+    JSON.stringify(backup, null, 2)
+  )}`;
+  const downloadAnchor = document.createElement('a');
+  const dateStr = new Date().toISOString().slice(0, 10);
+  downloadAnchor.setAttribute('href', jsonString);
+  downloadAnchor.setAttribute('download', `backup_elgalpon_${dateStr}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+  
+  // Guardar fecha del último backup realizado
+  localStorage.setItem('elgalpon_last_backup_date', new Date().toISOString());
+};
+
+export const getLastBackupDate = (): string | null => {
+  return localStorage.getItem('elgalpon_last_backup_date');
+};
+
