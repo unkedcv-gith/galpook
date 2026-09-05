@@ -91,7 +91,7 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
               <Laugh className="w-6 h-6 text-[#ED3078]" />
             </div>
             <div>
-              <h3 className="font-heading text-xl font-black text-white mb-1 uppercase">Reloj Loco <span className="text-xs font-black bg-[#ED3078] text-white px-2 py-0.5 rounded-full ml-1 align-middle">CALLE 5</span></h3>
+              <h3 className="font-heading text-xl font-black text-white mb-1 uppercase">Reloj Loco y Camas Elásticas <span className="text-xs font-black bg-[#ED3078] text-white px-2 py-0.5 rounded-full ml-1 align-middle">CALLE 5</span></h3>
               <p className="text-xs text-zinc-300 font-medium leading-relaxed">
                 Nuestra atracción estrella y la más elegida. ¡Poné a prueba tu destreza saltando y esquivando! Disponible exclusivamente en la sucursal de Calle 5.
               </p>
@@ -134,7 +134,7 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
                   </h4>
                   <ul className="space-y-2 text-xs font-medium text-zinc-300">
                     <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-[#A3BA13] shrink-0 mt-0.5" /> Snacks (1 vez)</li>
-                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-[#A3BA13] shrink-0 mt-0.5" /> 1 Empanada (jamón y queso / carne) p/p</li>
+                    <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-[#A3BA13] shrink-0 mt-0.5" /> 1 Empanada (jamón y queso / carne) por persona</li>
                     <li className="flex items-start gap-2"><CheckCircle2 className="w-4 h-4 text-[#A3BA13] shrink-0 mt-0.5" /> 2 Pizzas Muzzarella cada 8 personas</li>
                   </ul>
                   <p className="text-[10px] text-zinc-500 mt-3 italic">* Bebida no incluida. Se permite ingresar comida adicional solo para adultos.</p>
@@ -155,17 +155,26 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {ATTRACTIONS.map((item) => {
+              const isArte = item.id === 'arte_creatividad';
               return (
                 <div
                   key={item.id}
-                  className="bg-black/60 backdrop-blur-md rounded-2xl p-6 border-2 border-white/20 flex flex-col justify-between space-y-4 hover:border-white hover:scale-[1.01] shadow-xl transition-all"
+                  className={
+                    isArte
+                      ? "bg-[#A3BA13] rounded-2xl p-6 border-2 border-black/20 flex flex-col justify-between space-y-4 hover:border-black hover:scale-[1.01] shadow-xl transition-all"
+                      : "bg-black/60 backdrop-blur-md rounded-2xl p-6 border-2 border-white/20 flex flex-col justify-between space-y-4 hover:border-white hover:scale-[1.01] shadow-xl transition-all"
+                  }
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className="p-2.5 rounded-xl bg-zinc-950/60 border border-white/20 text-white font-black">
+                      <span className={isArte ? "p-2.5 rounded-xl bg-black text-white font-black shadow-xs" : "p-2.5 rounded-xl bg-zinc-950/60 border border-white/20 text-white font-black"}>
                         {getAttractionIcon(item.icon, item.id)}
                       </span>
-                      {item.staffSupervised ? (
+                      {isArte ? (
+                        <span className="text-[10px] font-black bg-black text-white px-2.5 py-1 rounded-full uppercase shadow-xs">
+                          UP ESPACIO
+                        </span>
+                      ) : item.staffSupervised ? (
                         <span className="text-[10px] font-black bg-[#1EB8BF] text-black px-2.5 py-1 rounded-full uppercase shadow-xs">
                           Supervisado
                         </span>
@@ -176,12 +185,12 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
                       )}
                     </div>
 
-                    <h4 className="font-heading text-lg font-black text-white mb-1 uppercase">{item.title}</h4>
-                    <p className="text-xs text-white leading-relaxed font-medium">{item.description}</p>
+                    <h4 className={`font-heading text-lg font-black mb-1 uppercase ${isArte ? 'text-black' : 'text-white'}`}>{item.title}</h4>
+                    <p className={`text-xs leading-relaxed font-semibold ${isArte ? 'text-black' : 'text-white'}`}>{item.description}</p>
                   </div>
 
-                  <div className="pt-2 border-t border-white/15 text-[11px] text-[#A3BA13] font-black flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-[#A3BA13]" />
+                  <div className={`pt-2 border-t text-[11px] font-black flex items-center gap-1.5 ${isArte ? 'border-black/20 text-black' : 'border-white/15 text-[#A3BA13]'}`}>
+                    <CheckCircle2 className={`w-3.5 h-3.5 ${isArte ? 'text-black' : 'text-[#A3BA13]'}`} />
                     Garantía de entretenimiento sano
                   </div>
                 </div>
