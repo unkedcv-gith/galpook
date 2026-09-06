@@ -137,6 +137,10 @@ export interface WorkshopProgram {
   subtitle: string;
   ageRange: string;
   schedule: string;
+  pricing?: {
+    onceAWeek: string;
+    twiceAWeek: string;
+  };
   description: string;
   highlights: string[];
   color: 'cyan' | 'pink' | 'yellow' | 'lime';

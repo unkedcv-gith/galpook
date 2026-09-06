@@ -188,6 +188,10 @@ export const WORKSHOP_PROGRAMS: WorkshopProgram[] = [
     subtitle: 'Fitness y juego para los chicos',
     ageRange: 'De 3 a 6 años',
     schedule: 'Martes y Jueves (17:30 a 18:30 hs)',
+    pricing: {
+      onceAWeek: '1 vez por semana $32.000 (mensual)',
+      twiceAWeek: '2 veces por semana $52.000 (mensual)',
+    },
     description: 'Desarrollo motriz, iniciación deportiva, esquivar obstáculos y juegos cooperativos en un entorno protegido.',
     highlights: ['Psicomotricidad', 'Juegos con pelotas y colchonetas', 'Profes especializados', 'Cero pantallas'],
     color: 'cyan',
@@ -199,6 +203,10 @@ export const WORKSHOP_PROGRAMS: WorkshopProgram[] = [
     subtitle: 'Fitness y agilidad para los chicos',
     ageRange: 'De 7 a 11 años',
     schedule: 'Martes y Jueves (18:30 a 19:30 hs)',
+    pricing: {
+      onceAWeek: '1 vez por semana $32.000 (mensual)',
+      twiceAWeek: '2 veces por semana $52.000 (mensual)',
+    },
     description: 'Circuitos de agilidad, velocidad, salto y juegos en equipo diseñados para descargar energía de forma saludable.',
     highlights: ['Circuitos de alta agilidad', 'Desafíos en equipo', 'Muro y tirolesa', 'Entrenamiento funcional guiado'],
     color: 'pink',

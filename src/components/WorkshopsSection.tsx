@@ -1,6 +1,6 @@
 import React from 'react';
 import { WORKSHOP_PROGRAMS, BRAND_INFO } from '../data/initialData';
-import { Clock, CheckCircle, MessageCircle } from 'lucide-react';
+import { Clock, CheckCircle, MessageCircle, Tag } from 'lucide-react';
 
 export const WorkshopsSection: React.FC = () => {
   return (
@@ -52,6 +52,30 @@ export const WorkshopsSection: React.FC = () => {
                     <Clock className="w-4 h-4 text-[#F2C700] shrink-0" />
                     <span>{program.schedule}</span>
                   </div>
+
+                  {/* Pricing Box */}
+                  {program.pricing && (
+                    <div className="bg-zinc-950/70 border border-[#F2C700]/40 p-3.5 rounded-xl space-y-2 shadow-inner">
+                      <div className="flex items-center gap-2 text-xs font-black text-[#F2C700] uppercase tracking-wider border-b border-white/10 pb-1.5">
+                        <Tag className="w-3.5 h-3.5 text-[#F2C700] shrink-0" />
+                        <span>Aranceles / Mensualidad</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs font-bold text-zinc-200">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-zinc-300 font-medium">1 vez por semana:</span>
+                          <span className="font-black text-white bg-black/60 px-2.5 py-1 rounded-md border border-white/15">
+                            $32.000 <span className="text-[10px] font-normal text-zinc-400">(mensual)</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-zinc-300 font-medium">2 veces por semana:</span>
+                          <span className="font-black text-[#F2C700] bg-black/60 px-2.5 py-1 rounded-md border border-[#F2C700]/40">
+                            $52.000 <span className="text-[10px] font-normal text-zinc-400">(mensual)</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Description */}
                   <p className="text-xs text-zinc-300 leading-relaxed font-medium">
