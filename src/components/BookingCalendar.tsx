@@ -610,9 +610,6 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                               <p className={`font-black text-base ${isSelected ? 'text-[#F2C700]' : 'text-white'}`}>
                                 {slot.timeRange}
                               </p>
-                              <p className="text-[11px] text-zinc-400 line-clamp-2">
-                                {slot.description}
-                              </p>
                             </div>
                           </button>
                         );
@@ -741,20 +738,6 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     <Info className="w-3.5 h-3.5 text-[#1EB8BF] shrink-0" />
                     <span>Se pueden agregar invitados adicionales según la capacidad de cada sucursal (Máx Calle 5: 40 chicos / 30 adultos. Máx Calle 13: 35 chicos / 20 adultos).</span>
                   </div>
-                </div>
-
-                {/* Notes */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-black text-zinc-300 uppercase">
-                    Comentarios o Consultas Especiales (Opcional)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="Temática, alimentos especiales para adultos, etc."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
-                  />
                 </div>
 
                 {/* Submit Action */}

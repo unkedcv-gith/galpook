@@ -220,10 +220,6 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
       setFormError('Por favor ingresá el nombre completo del cumpleañero/a.');
       return;
     }
-    if (!emergencyContactName.trim() || !emergencyContactPhone.trim()) {
-      setFormError('Por favor completá los datos del contacto de emergencia.');
-      return;
-    }
     if (!acceptedTermsAndConditions) {
       setFormError('Debes marcar el checkbox indicando que has leído y aceptas los términos y condiciones.');
       return;
@@ -250,10 +246,10 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
         relationshipDetail: relationship === 'otro' ? relationshipDetail : undefined,
         childFullName: childFullName.trim(),
         childAge: Number(childAge) || 7,
-        emergencyContactName: emergencyContactName.trim(),
-        emergencyContactPhone: emergencyContactPhone.trim(),
-        medicalInsurance: medicalInsurance.trim() || 'No especificada',
-        medicalConditions: medicalConditions.trim() || 'Sin observaciones informadas.',
+        emergencyContactName: emergencyContactName.trim() || undefined,
+        emergencyContactPhone: emergencyContactPhone.trim() || undefined,
+        medicalInsurance: medicalInsurance.trim() || undefined,
+        medicalConditions: medicalConditions.trim() || undefined,
         acceptedRules: true,
         acceptedPhysicalFitness: true,
         acceptedRiskAssumption: true,
@@ -865,12 +861,12 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
                     </div>
                   </div>
 
-                  {/* FORM SECTION 2: DATOS DEL MENOR Y FICHA DE SALUD */}
+                  {/* FORM SECTION 2: DATOS DEL AGASAJADO */}
                   <div className="bg-black/80 border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-4">
                     <div className="flex items-center gap-2 border-b border-zinc-800 pb-2.5">
                       <Heart className="w-4 h-4 text-[#A3BA13]" />
                       <h3 className="font-heading font-black text-sm sm:text-base text-white uppercase">
-                        2. Datos del Agasajado & Ficha de Salud / Emergencia
+                        2. Datos del Agasajado
                       </h3>
                     </div>
 
@@ -895,52 +891,6 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
                           max={12}
                           value={childAge}
                           onChange={(e) => setChildAge(e.target.value)}
-                          className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-black text-zinc-200 uppercase text-[11px]">Contacto de Emergencia Secundario *</label>
-                        <input
-                          type="text"
-                          required
-                          value={emergencyContactName}
-                          onChange={(e) => setEmergencyContactName(e.target.value)}
-                          placeholder="Ej: Gonzalo Pérez (Tío / Padre)"
-                          className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="font-black text-zinc-200 uppercase text-[11px]">Teléfono de Emergencia Secundario *</label>
-                        <input
-                          type="tel"
-                          required
-                          value={emergencyContactPhone}
-                          onChange={(e) => setEmergencyContactPhone(e.target.value)}
-                          placeholder="Ej: 221 573-1047"
-                          className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
-                        />
-                      </div>
-
-                      <div className="space-y-1 sm:col-span-2">
-                        <label className="font-black text-zinc-200 uppercase text-[11px]">Obra Social / Prepaga / Cobertura Médica</label>
-                        <input
-                          type="text"
-                          value={medicalInsurance}
-                          onChange={(e) => setMedicalInsurance(e.target.value)}
-                          placeholder="Ej: OSDE / IOMA / Swiss Medical / Hospital de Niños"
-                          className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
-                        />
-                      </div>
-
-                      <div className="space-y-1 sm:col-span-2">
-                        <label className="font-black text-zinc-200 uppercase text-[11px]">Alergias, Asma, Medicación o Condiciones Médicas de Relevancia</label>
-                        <textarea
-                          rows={2}
-                          value={medicalConditions}
-                          onChange={(e) => setMedicalConditions(e.target.value)}
-                          placeholder="Detallá si requiere algún cuidado especial o intolerancias (si no posee, podés dejar 'Ninguna')."
                           className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
                         />
                       </div>

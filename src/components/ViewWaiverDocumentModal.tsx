@@ -154,32 +154,40 @@ export const ViewWaiverDocumentModal: React.FC<ViewWaiverDocumentModalProps> = (
                 </div>
               </div>
 
-              {/* Child & Emergency Health Info */}
+              {/* Child Info */}
               <div className="space-y-3 text-xs">
                 <h4 className="font-heading font-black text-sm text-[#ED3078] uppercase border-b border-zinc-800 pb-1 flex items-center gap-1.5">
-                  <Heart className="w-4 h-4" /> Ficha de Salud & Contacto de Emergencia
+                  <Heart className="w-4 h-4" /> Datos del Agasajado
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-950 p-4 rounded-xl border border-zinc-800/80">
                   <div>
                     <span className="text-zinc-500 block text-[10px] uppercase font-bold">Cumpleañero/a</span>
                     <strong className="text-white">{waiver.childFullName} ({waiver.childAge} años)</strong>
                   </div>
-                  <div>
-                    <span className="text-zinc-500 block text-[10px] uppercase font-bold">Cobertura Médica / Obra Social</span>
-                    <span className="text-zinc-200">{waiver.medicalInsurance || 'No informada'}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500 block text-[10px] uppercase font-bold">Contacto de Emergencia</span>
-                    <span className="text-zinc-200">{waiver.emergencyContactName}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500 block text-[10px] uppercase font-bold">Teléfono de Emergencia</span>
-                    <span className="text-zinc-200">{waiver.emergencyContactPhone}</span>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <span className="text-zinc-500 block text-[10px] uppercase font-bold">Alergias / Cuidados Médicos</span>
-                    <span className="text-zinc-300">{waiver.medicalConditions || 'Sin observaciones médicas'}</span>
-                  </div>
+                  {waiver.medicalInsurance && (
+                    <div>
+                      <span className="text-zinc-500 block text-[10px] uppercase font-bold">Cobertura Médica / Obra Social</span>
+                      <span className="text-zinc-200">{waiver.medicalInsurance}</span>
+                    </div>
+                  )}
+                  {waiver.emergencyContactName && (
+                    <div>
+                      <span className="text-zinc-500 block text-[10px] uppercase font-bold">Contacto de Emergencia</span>
+                      <span className="text-zinc-200">{waiver.emergencyContactName}</span>
+                    </div>
+                  )}
+                  {waiver.emergencyContactPhone && (
+                    <div>
+                      <span className="text-zinc-500 block text-[10px] uppercase font-bold">Teléfono de Emergencia</span>
+                      <span className="text-zinc-200">{waiver.emergencyContactPhone}</span>
+                    </div>
+                  )}
+                  {waiver.medicalConditions && (
+                    <div className="sm:col-span-2">
+                      <span className="text-zinc-500 block text-[10px] uppercase font-bold">Alergias / Cuidados Médicos</span>
+                      <span className="text-zinc-300">{waiver.medicalConditions}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

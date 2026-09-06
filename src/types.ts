@@ -48,8 +48,8 @@ export interface LiabilityWaiver {
   // Datos del Agasajado / Menores
   childFullName: string;
   childAge: number;
-  emergencyContactName: string;
-  emergencyContactPhone: string;
+  emergencyContactName?: string;
+  emergencyContactPhone?: string;
   medicalInsurance?: string; // Obra Social / Prepaga
   medicalConditions?: string; // Alergias, asma, medicación, observaciones
 
