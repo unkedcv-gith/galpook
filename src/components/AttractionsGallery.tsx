@@ -6,7 +6,7 @@ import act2 from '../assets/images/tirolesa1.webp';
 import act3 from '../assets/images/actividades_galpon3.webp';
 import act4 from '../assets/images/camaselasticas.webp';
 import act5 from '../assets/images/telas1.webp';
-import act6 from '../assets/images/actividades_galpon6.jpg';
+import act6 from '../assets/images/dinamicas.webp';
 
 interface GalleryImage {
   id: string;
