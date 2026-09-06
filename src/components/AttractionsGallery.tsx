@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Camera, X, ChevronLeft, ChevronRight, Maximize2, Sparkles } from 'lucide-react';
 
-import act1 from '../assets/images/actividades_galpon1.webp';
-import act2 from '../assets/images/actividades_galpon2.webp';
+import act1 from '../assets/images/muro_escalada.webp';
+import act2 from '../assets/images/tirolesa1.webp';
 import act3 from '../assets/images/actividades_galpon3.webp';
-import act4 from '../assets/images/actividades_galpon4.webp';
-import act5 from '../assets/images/actividades_galpon5.webp';
+import act4 from '../assets/images/camaselasticas.webp';
+import act5 from '../assets/images/telas1.webp';
 import act6 from '../assets/images/actividades_galpon6.jpg';
 
 interface GalleryImage {
