@@ -433,7 +433,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                 <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-white">560 MT2</span>
                               </div>
                               <p className="text-[9px] text-[#A3BA13] font-bold">
-                                + INCLUYE CANCHA DE BASQUET (No incluye Reloj Loco)
+                                + INCLUYE MÁS CIRCUITOS DEPORTIVOS (No incluye Reloj Loco)
                               </p>
                             </>
                           ) : null}
