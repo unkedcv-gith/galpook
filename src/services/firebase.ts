@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, getFirestore, setLogLevel } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 // Your web app's Firebase configuration from Firebase Console (unkewebs)
@@ -13,7 +13,24 @@ const firebaseConfig = {
   measurementId: "G-L2DMEWV3GJ"
 };
 
+// Silence transient connection retry messages
+try {
+  setLogLevel('error');
+} catch {
+  // Ignore if already configured
+}
+
 // Initialize Firebase safely
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+
+let firestoreInstance;
+try {
+  firestoreInstance = initializeFirestore(app, {
+    experimentalForceLongPolling: true,
+  });
+} catch {
+  firestoreInstance = getFirestore(app);
+}
+
+export const db = firestoreInstance;
 export const auth = getAuth(app);

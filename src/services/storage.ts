@@ -557,8 +557,38 @@ export const formatWhatsAppNumber = (phoneStr: string): string => {
   return `549${clean}`;
 };
 
+export const getCustomBaseUrl = (): string => {
+  try {
+    return localStorage.getItem('salongalpon_public_base_url') || '';
+  } catch {
+    return '';
+  }
+};
+
+export const setCustomBaseUrl = (url: string): void => {
+  try {
+    if (url && url.trim()) {
+      let clean = url.trim();
+      if (!clean.startsWith('http://') && !clean.startsWith('https://')) {
+        clean = `https://${clean}`;
+      }
+      clean = clean.replace(/\/+$/, '');
+      localStorage.setItem('salongalpon_public_base_url', clean);
+    } else {
+      localStorage.removeItem('salongalpon_public_base_url');
+    }
+  } catch (e) {
+    console.warn('Could not save custom base url', e);
+  }
+};
+
 export const generateWaiverShareLink = (reservationId: string): string => {
   try {
+    const customBase = getCustomBaseUrl();
+    if (customBase) {
+      return `${customBase}/?waiver=${encodeURIComponent(reservationId)}`;
+    }
+
     const origin = window.location.origin;
     let pathname = window.location.pathname;
     
@@ -570,7 +600,12 @@ export const generateWaiverShareLink = (reservationId: string): string => {
 
     return `${origin}${pathname}?waiver=${encodeURIComponent(reservationId)}`;
   } catch (e) {
-    return `${window.location.href}?waiver=${encodeURIComponent(reservationId)}`;
+    let href = window.location.href.split('?')[0].split('#')[0];
+    href = href.replace(/\/index\.html$/, '');
+    if (!href.endsWith('/')) {
+      href = href + '/';
+    }
+    return `${href}?waiver=${encodeURIComponent(reservationId)}`;
   }
 };
 
@@ -579,7 +614,7 @@ export const generateWaiverWhatsAppMessage = (reservation: Reservation): string 
   const cleanPhone = formatWhatsAppNumber(reservation.parentPhone);
   const formattedDate = formatDateDDMMAAAA(reservation.date);
   
-  const text = `¡Hola ${reservation.parentName}! 👋 Confirmamos con éxito la recepción del pedido de reserva para el cumpleaños de *${reservation.childName}* el día *${formattedDate}* (${reservation.slotTime}) en *${reservation.branchName}* 🎪🎉.\n\nPara completar la habilitación del evento, por favor ingresá al siguiente enlace para leer y aceptar los *Términos y Condiciones de la Reserva*:\n\n👉 ${waiverUrl}\n\nQuedamos a disposición para cualquier consulta. ¡Nos vemos pronto para festejar! 🎈`;
+  const text = `¡Hola ${reservation.parentName}! 👋 Confirmamos con éxito la recepción del pedido de reserva para el cumpleaños de *${reservation.childName}* el día *${formattedDate}* (${reservation.slotTime}) en *${reservation.branchName}* 🎪🎉.\n\nPara completar la habilitación del evento, por favor ingresá al siguiente enlace para leer y aceptar los *Términos y Condiciones de la Reserva* (incluye las normas, firma digital y los datos para el envío de la seña):\n\n👉 ${waiverUrl}\n\nQuedamos a disposición para cualquier consulta. ¡Nos vemos pronto para festejar! 🎈`;
 
   return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
 };
@@ -801,12 +836,18 @@ export const listenToFirestoreBookings = (onUpdate?: (bookings: Reservation[]) =
         if (onUpdate) onUpdate(merged);
       },
       (err) => {
+        if (err?.code === 'unavailable') {
+          // Firestore operates in offline mode using cache/localStorage until reconnected
+          return;
+        }
         console.warn('Firestore onSnapshot error on bookings:', err);
       }
     );
     return unsub;
-  } catch (err) {
-    console.warn('Firestore listen bookings init notice:', err);
+  } catch (err: any) {
+    if (err?.code !== 'unavailable') {
+      console.warn('Firestore listen bookings init notice:', err);
+    }
     return () => {};
   }
 };
