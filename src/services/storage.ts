@@ -1,10 +1,11 @@
-import { Reservation, BlockedDate, Branch, AppUser, Inquiry, UserRole, LiabilityWaiver } from '../types';
+import { Reservation, BlockedDate, Branch, AppUser, Inquiry, UserRole, LiabilityWaiver, PricingSettings } from '../types';
 import { 
   INITIAL_RESERVATIONS, 
   INITIAL_BLOCKED_DATES, 
   INITIAL_BRANCHES, 
   INITIAL_USERS, 
-  INITIAL_INQUIRIES 
+  INITIAL_INQUIRIES,
+  INITIAL_PRICING_SETTINGS
 } from '../data/initialData';
 import { db } from './firebase';
 import { 
@@ -24,6 +25,7 @@ const BRANCHES_KEY = 'up_galpon_branches_v3';
 const USERS_KEY = 'up_galpon_users_v3';
 const INQUIRIES_KEY = 'up_galpon_inquiries_v3';
 const AUTH_USER_KEY = 'up_galpon_auth_user_v3';
+const PRICING_KEY = 'salongalpon_pricing_settings_v1';
 
 // Helper to remove any undefined fields before Firestore operations
 const sanitizeForFirestore = <T>(obj: T): T => {
@@ -60,11 +62,11 @@ export const parseReservationFromFirestore = (d: any): Reservation => {
     monthKey: data.monthKey || date.substring(0, 7),
     slotId: data.slotId || 'turn_afternoon_1',
     slotTime: data.slotTime || '15:00 a 17:30 hs',
-    parentName: data.parentName || data.name || 'Cliente',
-    parentPhone: data.parentPhone || data.phone || '',
-    parentEmail: data.parentEmail || data.email || '',
-    childName: data.childName || 'Cumpleañer@',
-    childAge: Number(data.childAge) || 6,
+    parentName: data.parentName || data.name || (data.liabilityWaiver && data.liabilityWaiver.signerFullName) || 'Cliente',
+    parentPhone: data.parentPhone || data.phone || (data.liabilityWaiver && data.liabilityWaiver.signerPhone) || '',
+    parentEmail: data.parentEmail || data.email || (data.liabilityWaiver && data.liabilityWaiver.signerEmail) || '',
+    childName: data.childName || (data.liabilityWaiver && data.liabilityWaiver.childFullName) || 'Cumpleañer@',
+    childAge: Number(data.childAge) || (data.liabilityWaiver && Number(data.liabilityWaiver.childAge)) || 6,
     estimatedKids: Number(data.estimatedKids) || 0,
     status: data.status || 'pending',
     depositPaid: Boolean(data.depositPaid),
@@ -494,26 +496,33 @@ export const saveLiabilityWaiver = async (
     targetReservation = await fetchReservationByIdAsync(reservationId);
   }
 
+  const baseReservation: Reservation = targetReservation || {
+    id: reservationId,
+    branchId: 'calle-5',
+    branchName: 'El Galpón',
+    createdAt: new Date().toISOString(),
+    date: new Date().toISOString().split('T')[0],
+    slotId: 't1',
+    slotTime: '15:00 a 17:30 hs',
+    parentName: waiver.signerFullName,
+    parentPhone: waiver.signerPhone,
+    parentEmail: waiver.signerEmail,
+    childName: waiver.childFullName,
+    childAge: waiver.childAge,
+    estimatedKids: 20,
+    status: 'approved',
+    depositPaid: true,
+    depositAmount: 50000,
+    additionalPackage: 'base_20',
+  };
+
   const updatedReservation: Reservation = {
-    ...(targetReservation || {
-      id: reservationId,
-      branchId: 'calle-5',
-      branchName: 'El Galpón',
-      createdAt: new Date().toISOString(),
-      date: new Date().toISOString().split('T')[0],
-      slotId: 't1',
-      slotTime: '15:00 a 17:30 hs',
-      parentName: waiver.signerFullName,
-      parentPhone: waiver.signerPhone,
-      parentEmail: waiver.signerEmail,
-      childName: waiver.childFullName,
-      childAge: waiver.childAge,
-      estimatedKids: 20,
-      status: 'approved',
-      depositPaid: true,
-      depositAmount: 50000,
-      additionalPackage: 'base_20',
-    }),
+    ...baseReservation,
+    parentName: waiver.signerFullName || baseReservation.parentName || 'Cliente',
+    parentPhone: waiver.signerPhone || baseReservation.parentPhone || '',
+    parentEmail: waiver.signerEmail || baseReservation.parentEmail || '',
+    childName: waiver.childFullName || baseReservation.childName || 'Cumpleañer@',
+    childAge: waiver.childAge || baseReservation.childAge || 6,
     waiverStatus: 'signed',
     liabilityWaiver: waiver,
   };
@@ -806,6 +815,21 @@ export const syncWithRemoteFirestore = async (): Promise<void> => {
       remoteInquiries.forEach((i) => inqMap.set(i.id, i));
       saveInquiries(Array.from(inqMap.values()));
     }
+
+    // 5. Sync Pricing Settings (Precios y Tarifas de Fitness, Espacio UP y Cumpleaños)
+    try {
+      const pricingDocRef = doc(db, 'config', 'pricing');
+      const pricingSnap = await getDoc(pricingDocRef);
+      if (pricingSnap.exists()) {
+        const remotePricing = pricingSnap.data() as PricingSettings;
+        localStorage.setItem(PRICING_KEY, JSON.stringify(remotePricing));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('pricingUpdate', { detail: remotePricing }));
+        }
+      }
+    } catch (e) {
+      console.warn('Pricing sync notice:', e);
+    }
   } catch (e) {
     console.warn('Firestore sync notice (running on local storage):', e);
   }
@@ -853,6 +877,103 @@ export const listenToFirestoreBookings = (onUpdate?: (bookings: Reservation[]) =
 };
 
 // -------------------------------------------------------------
+// PRICING & TARIFF SETTINGS (SUPER ADMIN ONLY)
+// -------------------------------------------------------------
+export const getPricingSettings = (): PricingSettings => {
+  try {
+    const data = localStorage.getItem(PRICING_KEY);
+    if (!data) {
+      localStorage.setItem(PRICING_KEY, JSON.stringify(INITIAL_PRICING_SETTINGS));
+      return INITIAL_PRICING_SETTINGS;
+    }
+    const parsed = JSON.parse(data);
+    return {
+      fitness: {
+        onceAWeek: typeof parsed?.fitness?.onceAWeek === 'number' ? parsed.fitness.onceAWeek : INITIAL_PRICING_SETTINGS.fitness.onceAWeek,
+        twiceAWeek: typeof parsed?.fitness?.twiceAWeek === 'number' ? parsed.fitness.twiceAWeek : INITIAL_PRICING_SETTINGS.fitness.twiceAWeek,
+      },
+      daycare: {
+        options: Array.isArray(parsed?.daycare?.options) && parsed.daycare.options.length > 0
+          ? parsed.daycare.options
+          : INITIAL_PRICING_SETTINGS.daycare.options,
+      },
+      birthdays: {
+        monthlyBasePrices: Array.isArray(parsed?.birthdays?.monthlyBasePrices) && parsed.birthdays.monthlyBasePrices.length > 0
+          ? parsed.birthdays.monthlyBasePrices
+          : INITIAL_PRICING_SETTINGS.birthdays.monthlyBasePrices,
+        additionals: Array.isArray(parsed?.birthdays?.additionals) && parsed.birthdays.additionals.length > 0
+          ? parsed.birthdays.additionals
+          : INITIAL_PRICING_SETTINGS.birthdays.additionals,
+      },
+      updatedAt: parsed?.updatedAt || new Date().toISOString(),
+    };
+  } catch {
+    return INITIAL_PRICING_SETTINGS;
+  }
+};
+
+export const savePricingSettings = async (settings: PricingSettings): Promise<PricingSettings> => {
+  const payload: PricingSettings = {
+    ...settings,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    localStorage.setItem(PRICING_KEY, JSON.stringify(payload));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('storageUpdate'));
+      window.dispatchEvent(new CustomEvent('pricingUpdate', { detail: payload }));
+    }
+  } catch (e) {
+    console.warn('Local storage pricing save warning:', e);
+  }
+
+  try {
+    const pricingDocRef = doc(db, 'config', 'pricing');
+    await setDoc(pricingDocRef, sanitizeForFirestore(payload));
+  } catch (err) {
+    console.warn('Firestore pricing save notice:', err);
+  }
+
+  return payload;
+};
+
+export const listenToPricingSettings = (onUpdate?: (settings: PricingSettings) => void) => {
+  try {
+    const pricingDocRef = doc(db, 'config', 'pricing');
+    const unsub = onSnapshot(
+      pricingDocRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const remoteData = snapshot.data() as PricingSettings;
+          localStorage.setItem(PRICING_KEY, JSON.stringify(remoteData));
+          if (onUpdate) onUpdate(remoteData);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('pricingUpdate', { detail: remoteData }));
+          }
+        }
+      },
+      (err) => {
+        if (err?.code !== 'unavailable') {
+          console.warn('Firestore listen pricing notice:', err);
+        }
+      }
+    );
+    return unsub;
+  } catch {
+    return () => {};
+  }
+};
+
+export const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+// -------------------------------------------------------------
 // BACKUP & RESTORE UTILITIES (SUPER ADMIN)
 // -------------------------------------------------------------
 export interface BackupData {
@@ -867,6 +988,7 @@ export interface BackupData {
   inquiries: Inquiry[];
   branches: Branch[];
   appUsers: AppUser[];
+  pricing: PricingSettings;
 }
 
 export const generateCompleteBackup = (): BackupData => {
@@ -874,6 +996,7 @@ export const generateCompleteBackup = (): BackupData => {
   const inquiries = getInquiries();
   const branches = getBranches();
   const appUsers = getAppUsers();
+  const pricing = getPricingSettings();
   const now = new Date();
 
   return {
@@ -888,6 +1011,7 @@ export const generateCompleteBackup = (): BackupData => {
     inquiries,
     branches,
     appUsers,
+    pricing,
   };
 };
 

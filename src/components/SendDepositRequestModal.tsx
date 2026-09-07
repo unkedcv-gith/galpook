@@ -6,7 +6,6 @@ import {
   Check, 
   CreditCard, 
   Building2, 
-  Sparkles,
   Calendar,
   Clock,
   User,

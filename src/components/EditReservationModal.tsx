@@ -11,7 +11,7 @@ import {
   Users, 
   DollarSign, 
   FileText, 
-  Sparkles,
+  Star,
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
@@ -239,7 +239,7 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
           {/* SECTION 2: Birthday Child & Guests */}
           <div className="bg-black/50 border border-zinc-800/80 rounded-2xl p-4 space-y-3.5">
             <div className="flex items-center gap-2 text-zinc-300 font-bold text-[11px] uppercase border-b border-zinc-800 pb-2">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              <Star className="w-3.5 h-3.5 text-amber-400" />
               <span>Cumpleañero/a e Invitados</span>
             </div>
 

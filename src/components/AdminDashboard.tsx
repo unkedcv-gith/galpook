@@ -38,6 +38,7 @@ import { SendDepositRequestModal } from './SendDepositRequestModal';
 import { EditReservationModal } from './EditReservationModal';
 import { LiabilityWaiverFormModal } from './LiabilityWaiverFormModal';
 import { EditAppUserModal } from './EditAppUserModal';
+import { AdminPricingManager } from './AdminPricingManager';
 import { TIME_SLOTS, HOLIDAYS } from '../data/initialData';
 
 const getAvailableSlotsForDate = (dateStr: string) => {
@@ -79,7 +80,6 @@ import {
   Mail,
   User,
   RefreshCw,
-  Sparkles,
   ChevronDown,
   Power,
   UserCheck,
@@ -96,10 +96,10 @@ import {
   Columns,
   SlidersHorizontal,
   BadgeCheck,
-  Sparkle,
   Download,
   Database,
-  Globe
+  Globe,
+  Tag
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -117,7 +117,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const [appUsers, setAppUsers] = useState<AppUser[]>([]);
 
   // Navigation & Filter states
-  const [activeTab, setActiveTab] = useState<'reservas' | 'consultas' | 'bloqueo' | 'nueva' | 'sucursales' | 'usuarios' | 'backup'>('reservas');
+  const [activeTab, setActiveTab] = useState<'reservas' | 'consultas' | 'bloqueo' | 'nueva' | 'sucursales' | 'usuarios' | 'backup' | 'precios'>('reservas');
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('all');
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
@@ -629,7 +629,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
         {/* CLEAN RESPONSIVE SEGMENTED BUTTON GRID (NO HORIZONTAL SCROLL) */}
         <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-2">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
             
             <button
               onClick={() => setActiveTab('reservas')}
@@ -719,6 +719,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                 >
                   <Users className="w-4 h-4 shrink-0" />
                   <span className="truncate">Usuarios</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('precios')}
+                  className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    activeTab === 'precios'
+                      ? 'bg-[#A3BA13] text-black shadow-md'
+                      : 'bg-black/40 border border-[#A3BA13]/40 text-[#A3BA13] hover:bg-[#A3BA13]/10'
+                  }`}
+                  title="Gestión de Precios y Aranceles"
+                >
+                  <Tag className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Precios</span>
                 </button>
 
                 <button
@@ -1187,9 +1200,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                                 {res.childAge} años
                               </span>
                             </h4>
-                            <span className="text-xs text-zinc-400 font-bold">
-                              Invitados: <strong className="text-zinc-200">{res.estimatedKids} chicos</strong>
-                            </span>
                           </div>
 
                           {/* Customer Specs Box */}
@@ -1202,17 +1212,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                               <Phone className="w-3.5 h-3.5 text-[#1EB8BF] shrink-0" />
                               <span>Cel: <strong className="text-white font-mono">{res.parentPhone}</strong></span>
                             </div>
-                            {res.parentEmail ? (
-                              <div className="flex items-center gap-2 sm:col-span-2">
-                                <Mail className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                                <span className="truncate text-zinc-400">Email: <strong className="text-zinc-200 font-normal">{res.parentEmail}</strong></span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 sm:col-span-2 text-amber-400/90">
-                                <Mail className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span className="text-[11px] italic font-medium">Email no informado aún</span>
-                              </div>
-                            )}
+                            {(() => {
+                              const emailToShow = res.parentEmail || res.liabilityWaiver?.signerEmail;
+                              return emailToShow ? (
+                                <div className="flex items-center gap-2 sm:col-span-2">
+                                  <Mail className="w-3.5 h-3.5 text-[#1EB8BF] shrink-0" />
+                                  <span className="truncate text-zinc-300">
+                                    Email: <strong className="text-white font-medium">{emailToShow}</strong>
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 sm:col-span-2 text-amber-400/90">
+                                  <Mail className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                  <span className="text-[11px] italic font-medium">Email no informado aún</span>
+                                </div>
+                              );
+                            })()}
                           </div>
 
                           {/* Requirements / Status checklist strip */}
@@ -2104,6 +2119,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
             </div>
 
           </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 8: GESTIÓN DE PRECIOS & ARANCELES (SUPERADMIN)                       */}
+        {/* ========================================================================= */}
+        {activeTab === 'precios' && isSuperAdminOnly && (
+          <AdminPricingManager isSuperAdmin={isSuperAdminOnly} />
         )}
 
       </div>

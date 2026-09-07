@@ -1,6 +1,7 @@
 import React from 'react';
 import { BRAND_INFO } from '../data/initialData';
-import { ShieldCheck, Clock, Smile, Sparkles, MessageCircle, Zap } from 'lucide-react';
+import { ShieldCheck, Clock, Smile, MessageCircle, Zap } from 'lucide-react';
+import { DaycareSimulator } from './DaycareSimulator';
 
 export const DaycareSection: React.FC = () => {
   return (
@@ -106,6 +107,9 @@ export const DaycareSection: React.FC = () => {
 
           </div>
         </div>
+
+        {/* Interactive Pricing Simulator for Espacio UP */}
+        <DaycareSimulator />
 
       </div>
     </section>

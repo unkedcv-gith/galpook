@@ -1,8 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { WORKSHOP_PROGRAMS, BRAND_INFO } from '../data/initialData';
 import { Clock, CheckCircle, MessageCircle, Tag } from 'lucide-react';
+import { getPricingSettings, formatCurrency, listenToPricingSettings } from '../services/storage';
+import { PricingSettings } from '../types';
 
 export const WorkshopsSection: React.FC = () => {
+  const [pricing, setPricing] = useState<PricingSettings>(getPricingSettings);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setPricing(getPricingSettings());
+    };
+    window.addEventListener('storageUpdate', handleUpdate);
+    window.addEventListener('pricingUpdate', handleUpdate);
+    const unsub = listenToPricingSettings((updated) => setPricing(updated));
+
+    return () => {
+      window.removeEventListener('storageUpdate', handleUpdate);
+      window.removeEventListener('pricingUpdate', handleUpdate);
+      unsub();
+    };
+  }, []);
   return (
     <section id="talleres" className="w-full bg-gradient-to-b from-[#1EB8BF] via-[#1EB8BF] via-45% to-[#A3BA13] text-black py-16 sm:py-24 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
@@ -64,13 +82,13 @@ export const WorkshopsSection: React.FC = () => {
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-zinc-300 font-medium">1 vez por semana:</span>
                           <span className="font-black text-white bg-black/60 px-2.5 py-1 rounded-md border border-white/15">
-                            $32.000 <span className="text-[10px] font-normal text-zinc-400">(mensual)</span>
+                            {formatCurrency(pricing.fitness.onceAWeek)} <span className="text-[10px] font-normal text-zinc-400">(mensual)</span>
                           </span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-zinc-300 font-medium">2 veces por semana:</span>
                           <span className="font-black text-[#F2C700] bg-black/60 px-2.5 py-1 rounded-md border border-[#F2C700]/40">
-                            $52.000 <span className="text-[10px] font-normal text-zinc-400">(mensual)</span>
+                            {formatCurrency(pricing.fitness.twiceAWeek)} <span className="text-[10px] font-normal text-zinc-400">(mensual)</span>
                           </span>
                         </div>
                       </div>

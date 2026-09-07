@@ -1,4 +1,17 @@
-import { FaqItem, WorkshopProgram, TimeSlot, Reservation, AttractionItem, Branch, AppUser, Inquiry } from '../types';
+import { 
+  FaqItem, 
+  WorkshopProgram, 
+  TimeSlot, 
+  Reservation, 
+  AttractionItem, 
+  Branch, 
+  AppUser, 
+  Inquiry,
+  PricingSettings,
+  DaycarePricingOption,
+  BirthdayMonthPrice,
+  BirthdayAdditionalPrice
+} from '../types';
 
 export const BRAND_INFO = {
   name: 'El Galpón',
@@ -316,3 +329,89 @@ export const INITIAL_BLOCKED_DATES: { branchId?: string; date: string; reason: s
     reason: 'Mantenimiento preventivo Muro y Tirolesa Calle 5',
   },
 ];
+
+export const INITIAL_DAYCARE_OPTIONS: DaycarePricingOption[] = [
+  // 5 días
+  { days: 5, hours: 1, price: 90000 },
+  { days: 5, hours: 2, price: 118000 },
+  { days: 5, hours: 3, price: 141000 },
+  { days: 5, hours: 4, price: 158000 },
+  // 4 días
+  { days: 4, hours: 1, price: 87000 },
+  { days: 4, hours: 2, price: 118000 },
+  { days: 4, hours: 3, price: 124200 },
+  { days: 4, hours: 4, price: 155000 },
+  // 3 días
+  { days: 3, hours: 1, price: 66000 },
+  { days: 3, hours: 2, price: 96000 },
+  { days: 3, hours: 3, price: 111200 },
+  { days: 3, hours: 4, price: 124200 },
+  // 2 días
+  { days: 2, hours: 1, price: 52000 },
+  { days: 2, hours: 2, price: 87000 },
+  { days: 2, hours: 3, price: 96000 },
+  { days: 2, hours: 4, price: 118000 },
+  // 1 día
+  { days: 1, hours: 1, price: 34000 },
+  { days: 1, hours: 2, price: 52000 },
+  { days: 1, hours: 3, price: 66000 },
+  { days: 1, hours: 4, price: 87000 },
+  { days: 1, hours: 5, price: 90000 },
+];
+
+export const INITIAL_BIRTHDAY_MONTHS: BirthdayMonthPrice[] = [
+  { monthIndex: 0, monthName: 'Enero', basePrice: 420000 },
+  { monthIndex: 1, monthName: 'Febrero', basePrice: 420000 },
+  { monthIndex: 2, monthName: 'Marzo', basePrice: 440000 },
+  { monthIndex: 3, monthName: 'Abril', basePrice: 440000 },
+  { monthIndex: 4, monthName: 'Mayo', basePrice: 460000 },
+  { monthIndex: 5, monthName: 'Junio', basePrice: 460000 },
+  { monthIndex: 6, monthName: 'Julio', basePrice: 480000 },
+  { monthIndex: 7, monthName: 'Agosto', basePrice: 480000 },
+  { monthIndex: 8, monthName: 'Septiembre', basePrice: 500000 },
+  { monthIndex: 9, monthName: 'Octubre', basePrice: 520000 },
+  { monthIndex: 10, monthName: 'Noviembre', basePrice: 540000 },
+  { monthIndex: 11, monthName: 'Diciembre', basePrice: 560000 },
+];
+
+export const INITIAL_BIRTHDAY_ADDITIONALS: BirthdayAdditionalPrice[] = [
+  {
+    id: 'adicional_21_28',
+    name: 'Adicional 1 (Chicos 21 al 28)',
+    description: 'Hasta 28 chicos. Incluye refuerzo de profesores y menú infantil.',
+    price: 50000,
+  },
+  {
+    id: 'adicional_29_35',
+    name: 'Adicional 2 (Chicos 29 al 35)',
+    description: 'Hasta 35 chicos. Incluye coordinación extra, monitores y catering completo.',
+    price: 60000,
+  },
+  {
+    id: 'adicional_calle5_36_40',
+    name: '3er Adicional Calle 5 (Chicos 36 al 40)',
+    description: 'Exclusivo El Galpón Calle 5 para salones ampliados hasta 40 chicos.',
+    price: 45000,
+  },
+  {
+    id: 'adicional_adultos_extra',
+    name: 'Adicional Adultos (+ de 20 adultos)',
+    description: 'Servicio de vajilla, camarero de apoyo y coordinación para adultos.',
+    price: 35000,
+  },
+];
+
+export const INITIAL_PRICING_SETTINGS: PricingSettings = {
+  fitness: {
+    onceAWeek: 32000,
+    twiceAWeek: 52000,
+  },
+  daycare: {
+    options: INITIAL_DAYCARE_OPTIONS,
+  },
+  birthdays: {
+    monthlyBasePrices: INITIAL_BIRTHDAY_MONTHS,
+    additionals: INITIAL_BIRTHDAY_ADDITIONALS,
+  },
+  updatedAt: new Date().toISOString(),
+};

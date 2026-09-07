@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, X, ChevronLeft, ChevronRight, Maximize2, Sparkles } from 'lucide-react';
+import { Camera, X, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
 
 import act1 from '../assets/images/muro_escalada.webp';
 import act2 from '../assets/images/tirolesa1.webp';

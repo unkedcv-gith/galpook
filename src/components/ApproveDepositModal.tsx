@@ -8,8 +8,7 @@ import {
   ExternalLink, 
   ShieldCheck,
   Calendar,
-  Clock,
-  Sparkles
+  Clock
 } from 'lucide-react';
 import { Reservation } from '../types';
 import { generateWaiverShareLink, formatWhatsAppNumber, formatDateDDMMAAAA } from '../services/storage';

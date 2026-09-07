@@ -12,7 +12,6 @@ import {
   Activity,
   Flame,
   Palette,
-  Sparkles,
   Laugh,
 } from 'lucide-react';
 import { AttractionsGallery } from './AttractionsGallery';

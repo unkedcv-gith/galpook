@@ -11,7 +11,7 @@ import {
   Mail, 
   Eraser, 
   Printer, 
-  Sparkles,
+  Star,
   Calendar,
   Check,
   ChevronRight,
@@ -105,11 +105,13 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
           setIsLoadingReservation(false);
           if (found) {
             setReservation(found);
-            setSignerFullName(found.parentName || '');
-            setSignerPhone(found.parentPhone || '');
-            setSignerEmail(found.parentEmail || '');
-            setChildFullName(found.childName || '');
-            setChildAge(found.childAge || 7);
+            setSignerFullName(found.parentName || (found.liabilityWaiver && found.liabilityWaiver.signerFullName) || '');
+            setSignerPhone(found.parentPhone || (found.liabilityWaiver && found.liabilityWaiver.signerPhone) || '');
+            setSignerEmail(found.parentEmail || (found.liabilityWaiver && found.liabilityWaiver.signerEmail) || '');
+            setSignerDni((found.liabilityWaiver && found.liabilityWaiver.signerDni) || '');
+            setSignerAddress((found.liabilityWaiver && found.liabilityWaiver.signerAddress) || '');
+            setChildFullName(found.childName || (found.liabilityWaiver && found.liabilityWaiver.childFullName) || '');
+            setChildAge(found.childAge || (found.liabilityWaiver && found.liabilityWaiver.childAge) || 7);
             setEmergencyContactName(found.parentName || '');
             setEmergencyContactPhone(found.parentPhone || '');
 
@@ -1058,7 +1060,7 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
                   <div className="bg-black/80 border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-3">
                     <div className="flex items-center justify-between border-b border-zinc-800 pb-2">
                       <div className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-[#1EB8BF]" />
+                        <Star className="w-4 h-4 text-[#1EB8BF]" />
                         <h3 className="font-heading font-black text-sm sm:text-base text-white uppercase">
                           3. Firma Digital del Titular Responsable *
                         </h3>

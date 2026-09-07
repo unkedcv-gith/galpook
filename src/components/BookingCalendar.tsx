@@ -1,7 +1,17 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Reservation, Branch } from '../types';
+import { Reservation, Branch, PricingSettings } from '../types';
 import { TIME_SLOTS, BRAND_INFO, HOLIDAYS } from '../data/initialData';
-import { getReservations, getBlockedDates, addReservation, getBranches, formatDateDDMMAAAA, formatWhatsAppNumber } from '../services/storage';
+import { 
+  getReservations, 
+  getBlockedDates, 
+  addReservation, 
+  getBranches, 
+  formatDateDDMMAAAA, 
+  formatWhatsAppNumber,
+  getPricingSettings,
+  formatCurrency,
+  listenToPricingSettings
+} from '../services/storage';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -15,10 +25,12 @@ import {
   Gift, 
   MapPin, 
   Clock, 
-  Sparkles,
-  ArrowRight,
-  RefreshCw,
-  Info
+  Star, 
+  ArrowRight, 
+  RefreshCw, 
+  Info,
+  Tag,
+  DollarSign
 } from 'lucide-react';
 
 interface BookingCalendarProps {
@@ -94,10 +106,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   // Reactive reservations & blocked dates State
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [allBlockedDates, setAllBlockedDates] = useState<ReturnType<typeof getBlockedDates>>([]);
+  const [pricing, setPricing] = useState<PricingSettings>(getPricingSettings);
 
   const loadData = () => {
     setAllReservations(getReservations());
     setAllBlockedDates(getBlockedDates());
+    setPricing(getPricingSettings());
   };
 
   useEffect(() => {
@@ -107,9 +121,13 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     };
     window.addEventListener('storageUpdate', handleStorageUpdate);
     window.addEventListener('storage', handleStorageUpdate);
+    window.addEventListener('pricingUpdate', handleStorageUpdate);
+    const unsub = listenToPricingSettings((updated) => setPricing(updated));
     return () => {
       window.removeEventListener('storageUpdate', handleStorageUpdate);
       window.removeEventListener('storage', handleStorageUpdate);
+      window.removeEventListener('pricingUpdate', handleStorageUpdate);
+      unsub();
     };
   }, []);
 
@@ -493,6 +511,80 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
+
+                {/* DYNAMIC BIRTHDAY PRICING FOR CURRENT SELECTED MONTH & ADDITIONALS */}
+                {(() => {
+                  const currentMonthPricing = pricing.birthdays.monthlyBasePrices.find((m) => m.monthIndex === month);
+                  const basePrice = currentMonthPricing ? currentMonthPricing.basePrice : 500000;
+
+                  return (
+                    <div className="bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 border-[#1EB8BF]/40 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                      {/* Top Header with Month Base Price */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-black uppercase text-[#1EB8BF] tracking-wider flex items-center gap-1.5">
+                            <Star className="w-3.5 h-3.5 text-[#F2C700]" /> Tarifa Base del Mes Elegido
+                          </span>
+                          <h4 className="font-heading font-black text-white text-base sm:text-lg uppercase">
+                            Festejo Cumpleaños en <span className="text-[#F2C700] capitalize">{monthName}</span>
+                          </h4>
+                          <p className="text-[11px] text-zinc-300 font-medium leading-relaxed">
+                            Contrato base: 20 chicos + 20 adultos, 2½ hs con profesores, atracciones exclusivas y menú infantil.
+                          </p>
+                        </div>
+                        <div className="bg-black/80 border-2 border-[#F2C700]/50 px-4 py-2.5 rounded-2xl text-center sm:text-right shrink-0 shadow-lg">
+                          <span className="text-[10px] font-black text-zinc-400 block uppercase tracking-wider">
+                            Valor Base {currentMonthPricing?.monthName || ''}
+                          </span>
+                          <span className="font-heading font-black text-2xl sm:text-3xl text-[#F2C700]">
+                            {formatCurrency(basePrice)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Additionals Breakdown for this Event */}
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between text-xs font-black text-zinc-200 uppercase tracking-wider">
+                          <span className="flex items-center gap-1.5 text-white">
+                            <Tag className="w-3.5 h-3.5 text-[#1EB8BF]" /> Valores de Adicionales (por si superás los 20 chicos):
+                          </span>
+                          <span className="text-[10px] text-[#A3BA13] lowercase font-semibold hidden sm:inline">
+                            *se abonan 1 semana antes del evento
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                          {pricing.birthdays.additionals.map((add) => (
+                            <div
+                              key={add.id}
+                              className="bg-zinc-950/70 border border-white/15 hover:border-[#1EB8BF]/40 rounded-xl p-3 flex flex-col justify-between space-y-1.5 transition-all shadow-xs"
+                            >
+                              <div className="space-y-1">
+                                <span className="font-heading font-black text-xs text-white uppercase block leading-tight">
+                                  {add.name}
+                                </span>
+                                <p className="text-[10px] text-zinc-400 leading-tight">
+                                  {add.description}
+                                </p>
+                              </div>
+                              <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                                <span className="text-[9px] text-zinc-400 font-bold uppercase">Valor:</span>
+                                <span className="font-heading font-black text-xs text-[#1EB8BF]">
+                                  +{formatCurrency(add.price)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-[10px] text-zinc-300 text-center flex items-center justify-center gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-[#A3BA13] shrink-0" />
+                          <span>¡Al abonar la seña CONGELÁS la tarifa base y el valor de los adicionales del mes elegido!</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Day Name Header Row */}
                 <div className="grid grid-cols-7 gap-1.5 text-center text-xs font-black text-zinc-400 uppercase tracking-wider py-1">

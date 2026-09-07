@@ -162,3 +162,37 @@ export interface ReviewItem {
   comment: string;
   rating: number;
 }
+
+export interface DaycarePricingOption {
+  days: number; // 1 to 5
+  hours: number; // 1 to 5
+  price: number; // e.g. 90000
+}
+
+export interface BirthdayMonthPrice {
+  monthIndex: number; // 0 to 11 (0 = Enero, 8 = Septiembre, etc.)
+  monthName: string;
+  basePrice: number;
+}
+
+export interface BirthdayAdditionalPrice {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+}
+
+export interface PricingSettings {
+  fitness: {
+    onceAWeek: number; // 32000
+    twiceAWeek: number; // 52000
+  };
+  daycare: {
+    options: DaycarePricingOption[];
+  };
+  birthdays: {
+    monthlyBasePrices: BirthdayMonthPrice[];
+    additionals: BirthdayAdditionalPrice[];
+  };
+  updatedAt?: string;
+}
