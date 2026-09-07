@@ -24,7 +24,8 @@ import {
   AlertCircle,
   HelpCircle,
   Clock,
-  Calendar
+  Calendar,
+  DollarSign
 } from 'lucide-react';
 
 interface AdminPricingManagerProps {
@@ -89,6 +90,16 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
         },
       };
     });
+  };
+
+  const handleBirthdayDepositChange = (value: string) => {
+    setPricing((prev) => ({
+      ...prev,
+      birthdays: {
+        ...prev.birthdays,
+        depositAmount: parseInt(value, 10) || 0,
+      },
+    }));
   };
 
   const handleBirthdayMonthPriceChange = (monthIndex: number, value: string) => {
@@ -397,8 +408,37 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
       {/* ========================================================================= */}
       {activeSubSection === 'birthdays' && (
         <div className="bg-zinc-950/80 border-2 border-white/15 rounded-3xl p-6 sm:p-8 space-y-8 shadow-xl">
-          {/* Sub-block A: Base Monthly Prices */}
+          {/* Sub-block A: Configuración de Seña */}
           <div className="space-y-4">
+            <div className="border-b border-white/10 pb-4 space-y-1">
+              <h3 className="font-heading text-xl font-black text-white uppercase flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-emerald-400" /> Valor de la Seña
+              </h3>
+              <p className="text-xs text-zinc-300 font-medium">
+                Monto fijo requerido para confirmar la reserva y congelar la fecha.
+              </p>
+            </div>
+            
+            <div className="bg-zinc-900/80 border border-emerald-500/30 rounded-2xl p-4 sm:p-5 max-w-sm">
+              <div className="space-y-2">
+                <label className="text-xs text-zinc-300 uppercase font-bold flex items-center justify-between">
+                  <span>Monto ($):</span>
+                  <span className="text-emerald-400">{formatCurrency(pricing.birthdays.depositAmount)}</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={pricing.birthdays.depositAmount}
+                  onChange={(e) => handleBirthdayDepositChange(e.target.value)}
+                  className="w-full bg-zinc-950 border border-emerald-500/50 rounded-xl px-4 py-3 text-white font-mono text-base font-bold focus:outline-hidden focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Sub-block B: Base Monthly Prices */}
+          <div className="space-y-4 pt-4 border-t border-white/5">
             <div className="border-b border-white/10 pb-4 space-y-1">
               <h3 className="font-heading text-xl font-black text-white uppercase flex items-center gap-2">
                 <Cake className="w-5 h-5 text-[#ED3078]" /> Tarifas Base Mensuales de Cumpleaños

@@ -30,7 +30,8 @@ import {
   downloadBackupAsJSON,
   getLastBackupDate,
   getCustomBaseUrl,
-  setCustomBaseUrl
+  setCustomBaseUrl,
+  getPricingSettings
 } from '../services/storage';
 import { ViewWaiverDocumentModal } from './ViewWaiverDocumentModal';
 import { ApproveDepositModal } from './ApproveDepositModal';
@@ -526,7 +527,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const pendingInFilter = filteredReservations.filter((r) => r.status === 'pending').length;
   const totalRevenueDeposits = filteredReservations
     .filter((r) => r.status === 'approved' && r.depositPaid)
-    .reduce((sum, r) => sum + (r.depositAmount || 100000), 0);
+    .reduce((sum, r) => sum + (r.depositAmount || getPricingSettings().birthdays.depositAmount), 0);
 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950 text-white overflow-y-auto">

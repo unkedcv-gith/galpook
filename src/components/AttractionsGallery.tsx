@@ -92,7 +92,7 @@ export const AttractionsGallery: React.FC = () => {
           <Camera className="w-4 h-4 text-[#1EB8BF]" />
           <span>Galería de actividades en acción</span>
         </div>
-        <p className="text-[11px] text-zinc-500 font-medium hidden sm:block">
+        <p className="text-[11px] text-[#f4f4f4] font-medium hidden sm:block">
           Pasa el cursor para pausar • Haz clic para ampliar
         </p>
       </div>

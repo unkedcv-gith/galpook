@@ -374,7 +374,7 @@ export const updateReservationStatus = async (
         ...r,
         status,
         depositPaid: depositPaid !== undefined ? depositPaid : r.depositPaid,
-        depositAmount: depositAmount !== undefined ? depositAmount : (status === 'approved' ? 100000 : r.depositAmount),
+        depositAmount: depositAmount !== undefined ? depositAmount : (status === 'approved' ? getPricingSettings().birthdays.depositAmount : r.depositAmount),
         waiverStatus: r.waiverStatus || 'pending',
       };
       return updatedItem;
@@ -632,7 +632,7 @@ export const generateDepositRequestWhatsAppMessage = (
   reservation: Reservation,
   bankAlias: string = 'ELGALPON.FESTEJOS',
   bankCbu: string = '0070123430004567890123',
-  depositAmount: number = 100000
+  depositAmount: number = getPricingSettings().birthdays.depositAmount
 ): string => {
   const cleanPhone = formatWhatsAppNumber(reservation.parentPhone);
   const formattedDate = formatDateDDMMAAAA(reservation.date);
@@ -898,6 +898,9 @@ export const getPricingSettings = (): PricingSettings => {
           : INITIAL_PRICING_SETTINGS.daycare.options,
       },
       birthdays: {
+        depositAmount: typeof parsed?.birthdays?.depositAmount === 'number'
+          ? parsed.birthdays.depositAmount
+          : INITIAL_PRICING_SETTINGS.birthdays.depositAmount,
         monthlyBasePrices: Array.isArray(parsed?.birthdays?.monthlyBasePrices) && parsed.birthdays.monthlyBasePrices.length > 0
           ? parsed.birthdays.monthlyBasePrices
           : INITIAL_PRICING_SETTINGS.birthdays.monthlyBasePrices,

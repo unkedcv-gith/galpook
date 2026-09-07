@@ -13,7 +13,7 @@ import {
   DollarSign
 } from 'lucide-react';
 import { Reservation } from '../types';
-import { formatWhatsAppNumber, formatDateDDMMAAAA } from '../services/storage';
+import { formatWhatsAppNumber, formatDateDDMMAAAA, getPricingSettings } from '../services/storage';
 import { DEFAULT_BANK_INFO } from '../data/initialData';
 
 interface SendDepositRequestModalProps {
@@ -35,7 +35,7 @@ export const SendDepositRequestModal: React.FC<SendDepositRequestModalProps> = (
   const [cuit, setCuit] = useState(DEFAULT_BANK_INFO.cuit);
   const [alias, setAlias] = useState(DEFAULT_BANK_INFO.alias);
   const [cbu, setCbu] = useState(DEFAULT_BANK_INFO.cbu);
-  const [amount, setAmount] = useState(DEFAULT_BANK_INFO.depositAmount);
+  const [amount, setAmount] = useState(getPricingSettings().birthdays.depositAmount);
 
   if (!isOpen || !reservation) return null;
 

@@ -11,7 +11,6 @@ import {
   Trophy,
   Activity,
   Flame,
-  Palette,
   Laugh,
 } from 'lucide-react';
 import { AttractionsGallery } from './AttractionsGallery';
@@ -32,8 +31,6 @@ const getAttractionIcon = (iconName: string, id: string) => {
       return <Activity className="w-5 h-5" />;
     case 'elasticas':
       return <Flame className="w-5 h-5" />;
-    case 'arte_creatividad':
-      return <Palette className="w-5 h-5" />;
     default:
       if (iconName === 'Mountain') return <Mountain className="w-5 h-5" />;
       return <Zap className="w-5 h-5" />;
@@ -152,29 +149,20 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             {ATTRACTIONS.map((item) => {
-              const isArte = item.id === 'arte_creatividad';
               return (
                 <div
                   key={item.id}
-                  className={
-                    isArte
-                      ? "bg-[#A3BA13] rounded-2xl p-6 border-2 border-black/20 flex flex-col justify-between space-y-4 hover:border-black hover:scale-[1.01] shadow-xl transition-all"
-                      : "bg-black/60 backdrop-blur-md rounded-2xl p-6 border-2 border-white/20 flex flex-col justify-between space-y-4 hover:border-white hover:scale-[1.01] shadow-xl transition-all"
-                  }
+                  className="group bg-black/60 backdrop-blur-md rounded-2xl p-6 border-2 border-white/20 flex flex-col justify-between space-y-4 hover:border-[#1EB8BF] hover:bg-black/80 hover:-translate-y-1.5 hover:shadow-[0_10px_40px_-10px_rgba(30,184,191,0.3)] duration-300 ease-out transition-all"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">
-                      <span className={isArte ? "p-2.5 rounded-xl bg-black text-white font-black shadow-xs" : "p-2.5 rounded-xl bg-zinc-950/60 border border-white/20 text-white font-black"}>
+                      <span className="p-2.5 rounded-xl bg-zinc-950/60 border border-white/20 text-white font-black group-hover:scale-110 group-hover:border-[#1EB8BF]/50 group-hover:text-[#1EB8BF] transition-all duration-300 ease-out">
                         {getAttractionIcon(item.icon, item.id)}
                       </span>
-                      {isArte ? (
-                        <span className="text-[10px] font-black bg-black text-white px-2.5 py-1 rounded-full uppercase shadow-xs">
-                          UP ESPACIO
-                        </span>
-                      ) : item.staffSupervised ? (
-                        <span className="text-[10px] font-black bg-[#1EB8BF] text-black px-2.5 py-1 rounded-full uppercase shadow-xs">
+                      {item.staffSupervised ? (
+                        <span className="text-[10px] font-black bg-[#1EB8BF] text-black px-2.5 py-1 rounded-full uppercase shadow-xs group-hover:shadow-[0_0_15px_rgba(30,184,191,0.5)] transition-all duration-300">
                           Supervisado
                         </span>
                       ) : (
@@ -184,12 +172,12 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
                       )}
                     </div>
 
-                    <h4 className={`font-heading text-lg font-black mb-1 uppercase ${isArte ? 'text-black' : 'text-white'}`}>{item.title}</h4>
-                    <p className={`text-xs leading-relaxed font-semibold ${isArte ? 'text-black' : 'text-white'}`}>{item.description}</p>
+                    <h4 className="font-heading text-lg font-black mb-1 uppercase text-white group-hover:text-[#1EB8BF] transition-colors duration-300">{item.title}</h4>
+                    <p className="text-xs leading-relaxed font-semibold text-zinc-300 group-hover:text-white transition-colors duration-300">{item.description}</p>
                   </div>
 
-                  <div className={`pt-2 border-t text-[11px] font-black flex items-center gap-1.5 ${isArte ? 'border-black/20 text-black' : 'border-white/15 text-[#A3BA13]'}`}>
-                    <CheckCircle2 className={`w-3.5 h-3.5 ${isArte ? 'text-black' : 'text-[#A3BA13]'}`} />
+                  <div className="pt-2 border-t text-[11px] font-black flex items-center gap-1.5 border-white/15 text-[#A3BA13] group-hover:border-[#1EB8BF]/30 transition-colors duration-300">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#A3BA13] group-hover:scale-125 transition-transform duration-300" />
                     Garantía de entretenimiento sano
                   </div>
                 </div>

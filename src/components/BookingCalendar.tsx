@@ -332,7 +332,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
               </div>
               <div className="flex justify-between pt-1">
                 <span className="text-zinc-400 font-bold uppercase">Estado:</span>
-                <span className="text-amber-400 font-black uppercase tracking-wider">Pendiente de Seña ($100.000)</span>
+                <span className="text-amber-400 font-black uppercase tracking-wider">Pendiente de Seña (${pricing.birthdays.depositAmount.toLocaleString('es-AR')})</span>
               </div>
             </div>
 
@@ -340,7 +340,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
             <div className="space-y-3 pt-2">
               <a
                 href={`https://api.whatsapp.com/send?phone=${selectedBranch?.whatsappNumber ? formatWhatsAppNumber(selectedBranch.whatsappNumber) : '5492215731047'}&text=${encodeURIComponent(
-                  `¡Hola ${submittedReservation.branchName}! 👋 Acabo de generar una solicitud de reserva web para el cumpleaños de *${submittedReservation.childName}* el día *${formatDateDDMMAAAA(submittedReservation.date)}* en el turno *${submittedReservation.slotTime}* 🎪🎉. Mi nombre es ${submittedReservation.parentName}. ¿Cómo coordinamos el pago de la seña de $100.000? 🎈`
+                  `¡Hola ${submittedReservation.branchName}! 👋 Acabo de generar una solicitud de reserva web para el cumpleaños de *${submittedReservation.childName}* el día *${formatDateDDMMAAAA(submittedReservation.date)}* en el turno *${submittedReservation.slotTime}* 🎪🎉. Mi nombre es ${submittedReservation.parentName}. ¿Cómo coordinamos el pago de la seña de $${pricing.birthdays.depositAmount.toLocaleString('es-AR')}? 🎈`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"

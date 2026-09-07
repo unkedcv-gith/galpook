@@ -32,7 +32,8 @@ import {
   saveLiabilityWaiver, 
   fetchReservationByIdAsync, 
   formatWhatsAppNumber, 
-  formatDateDDMMAAAA 
+  formatDateDDMMAAAA,
+  getPricingSettings
 } from '../services/storage';
 import { DEFAULT_BANK_INFO, BRAND_INFO } from '../data/initialData';
 
@@ -361,7 +362,7 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
     window.print();
   };
 
-  const depositAmount = reservation?.depositAmount || DEFAULT_BANK_INFO.depositAmount || 100000;
+  const depositAmount = reservation?.depositAmount || getPricingSettings().birthdays.depositAmount;
   const formattedDate = reservation ? formatDateDDMMAAAA(reservation.date) : '';
   const destinationPhone = formatWhatsAppNumber(
     reservation?.branchPhone || (reservation?.branchId === 'calle-13' ? '221 573-1047' : '221 573-1047')

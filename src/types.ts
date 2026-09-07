@@ -191,6 +191,7 @@ export interface PricingSettings {
     options: DaycarePricingOption[];
   };
   birthdays: {
+    depositAmount: number;
     monthlyBasePrices: BirthdayMonthPrice[];
     additionals: BirthdayAdditionalPrice[];
   };

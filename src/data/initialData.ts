@@ -185,13 +185,6 @@ export const ATTRACTIONS: AttractionItem[] = [
     icon: 'Smile',
     staffSupervised: true,
   },
-  {
-    id: 'arte_creatividad',
-    title: 'Arte y Expresión Corporal',
-    description: 'Taller creativo, pintura libre y dinámicas de movimiento lúdico.',
-    icon: 'Palette',
-    staffSupervised: false,
-  },
 ];
 
 export const WORKSHOP_PROGRAMS: WorkshopProgram[] = [
@@ -410,6 +403,7 @@ export const INITIAL_PRICING_SETTINGS: PricingSettings = {
     options: INITIAL_DAYCARE_OPTIONS,
   },
   birthdays: {
+    depositAmount: 100000,
     monthlyBasePrices: INITIAL_BIRTHDAY_MONTHS,
     additionals: INITIAL_BIRTHDAY_ADDITIONALS,
   },

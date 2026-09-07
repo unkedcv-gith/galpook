@@ -16,7 +16,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { Reservation, Branch, TimeSlot } from '../types';
-import { updateReservation, formatDateDDMMAAAA } from '../services/storage';
+import { updateReservation, formatDateDDMMAAAA, getPricingSettings } from '../services/storage';
 import { TIME_SLOTS, HOLIDAYS } from '../data/initialData';
 
 const getAvailableSlotsForDate = (dateStr: string) => {
@@ -62,7 +62,7 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
   const [additionalPackage, setAdditionalPackage] = useState('');
   const [status, setStatus] = useState<Reservation['status']>('pending');
   const [depositPaid, setDepositPaid] = useState(false);
-  const [depositAmount, setDepositAmount] = useState<number>(100000);
+  const [depositAmount, setDepositAmount] = useState<number>(getPricingSettings().birthdays.depositAmount);
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -83,7 +83,7 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
       setAdditionalPackage(reservation.additionalPackage || 'base_20');
       setStatus(reservation.status || 'pending');
       setDepositPaid(reservation.depositPaid ?? false);
-      setDepositAmount(reservation.depositAmount || 100000);
+      setDepositAmount(reservation.depositAmount || getPricingSettings().birthdays.depositAmount);
       setNotes(reservation.notes || '');
       setSaveSuccess(false);
     }
