@@ -17,6 +17,8 @@ import {
   Calendar as CalendarIcon, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   CheckCircle2, 
   MessageCircle, 
   User, 
@@ -79,6 +81,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const [submittedReservation, setSubmittedReservation] = useState<Reservation | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPricingDetailsMobile, setShowPricingDetailsMobile] = useState(false);
 
   // Load active branches
   useEffect(() => {
@@ -200,6 +203,17 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     setCurrentDate(newDate);
   };
 
+  const handleBranchSelect = (branchId: string) => {
+    setSelectedBranchId(branchId);
+    setSelectedSlotId('');
+    setTimeout(() => {
+      const el = document.getElementById('paso2-almanaque');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 80);
+  };
+
   const handleDateClick = (dayNumber: number) => {
     if (isPastDate(dayNumber)) return;
     const formattedMonth = String(month + 1).padStart(2, '0');
@@ -207,6 +221,23 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     const dateString = `${year}-${formattedMonth}-${formattedDay}`;
     setSelectedDateStr(dateString);
     setSelectedSlotId(''); // Reset slot on date change
+
+    setTimeout(() => {
+      const el = document.getElementById('turnos-disponibles');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 80);
+  };
+
+  const handleSlotSelect = (slotId: string) => {
+    setSelectedSlotId(slotId);
+    setTimeout(() => {
+      const el = document.getElementById('formulario-reserva');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 80);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -412,11 +443,8 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     <button
                       key={branch.id}
                       type="button"
-                      onClick={() => {
-                        setSelectedBranchId(branch.id);
-                        setSelectedSlotId(''); // Reset slot on branch change
-                      }}
-                      className={`relative p-5 rounded-2xl border-2 text-left transition-all duration-300 cursor-pointer flex items-start gap-4 ${
+                      onClick={() => handleBranchSelect(branch.id)}
+                      className={`relative p-5 rounded-2xl border-2 text-left transition-all duration-300 cursor-pointer flex items-start gap-4 active:scale-[0.99] ${
                         isSelected
                           ? 'bg-zinc-900/90 border-[#1EB8BF] shadow-[0_0_25px_rgba(30,184,191,0.35)] scale-[1.01]'
                           : 'bg-black/60 border-white/15 hover:border-white/40 hover:bg-zinc-900/40'
@@ -481,7 +509,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
             {/* ========================================================================= */}
             {/* STEP 2: NEUTRAL MONTHLY CALENDAR & ON-DEMAND BOTTOM TIME SLOTS            */}
             {/* ========================================================================= */}
-            <div className="bg-black/80 backdrop-blur-md rounded-3xl border-2 border-white/20 p-5 sm:p-8 space-y-6 shadow-xl">
+            <div id="paso2-almanaque" className="bg-black/80 backdrop-blur-md rounded-3xl border-2 border-white/20 p-5 sm:p-8 space-y-6 shadow-xl scroll-mt-16">
               
               <div className="flex items-center gap-2.5 border-b border-white/10 pb-4">
                 <div className="w-8 h-8 rounded-xl bg-[#F2C700] text-black font-black text-sm flex items-center justify-center shrink-0">
@@ -505,7 +533,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   <button
                     type="button"
                     onClick={() => handleMonthChange('prev')}
-                    className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 transition-colors cursor-pointer"
+                    className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white border border-white/10 transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                     title="Mes Anterior"
                   >
                     <ChevronLeft className="w-5 h-5" />
@@ -520,7 +548,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   <button
                     type="button"
                     onClick={() => handleMonthChange('next')}
-                    className="p-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white border border-white/10 transition-colors cursor-pointer"
+                    className="p-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-white border border-white/10 transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                     title="Mes Siguiente"
                   >
                     <ChevronRight className="w-5 h-5" />
@@ -533,7 +561,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   const basePrice = currentMonthPricing ? currentMonthPricing.basePrice : 500000;
 
                   return (
-                    <div className="bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 border-[#1EB8BF]/40 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl">
+                    <div className="bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 border-[#1EB8BF]/40 rounded-2xl p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-xl">
                       {/* Top Header with Month Base Price */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
                         <div className="space-y-1">
@@ -557,8 +585,23 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                         </div>
                       </div>
 
+                      {/* Mobile Accordion Toggle for additionals / Always open on sm+ */}
+                      <div className="sm:hidden pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowPricingDetailsMobile(!showPricingDetailsMobile)}
+                          className="w-full py-2.5 px-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-200 text-xs font-bold flex items-center justify-between transition-colors border border-white/10 cursor-pointer min-h-[44px]"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Tag className="w-3.5 h-3.5 text-[#1EB8BF]" />
+                            {showPricingDetailsMobile ? 'Ocultar aranceles y adicionales' : 'Ver adicionales (por si superás 20 chicos)'}
+                          </span>
+                          {showPricingDetailsMobile ? <ChevronUp className="w-4 h-4 text-[#F2C700]" /> : <ChevronDown className="w-4 h-4 text-[#F2C700]" />}
+                        </button>
+                      </div>
+
                       {/* Additionals Breakdown for this Event */}
-                      <div className="space-y-2.5">
+                      <div className={`${showPricingDetailsMobile ? 'block' : 'hidden'} sm:block space-y-2.5 pt-1 sm:pt-0`}>
                         <div className="flex items-center justify-between text-xs font-black text-zinc-200 uppercase tracking-wider">
                           <span className="flex items-center gap-1.5 text-white">
                             <Tag className="w-3.5 h-3.5 text-[#1EB8BF]" /> Valores de Adicionales (por si superás los 20 chicos):
@@ -613,10 +656,10 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 </div>
 
                 {/* Calendar Days Grid (CLEAN & NEUTRAL DESIGN: All future days identical) */}
-                <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
                   {/* Empty cells before month start */}
                   {Array.from({ length: firstDayIndex }).map((_, i) => (
-                    <div key={`empty-${i}`} className="h-11 sm:h-14 rounded-xl opacity-0 pointer-events-none" />
+                    <div key={`empty-${i}`} className="h-12 sm:h-14 rounded-xl opacity-0 pointer-events-none" />
                   ))}
 
                   {/* Day Buttons */}
@@ -634,12 +677,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                         type="button"
                         disabled={isPast}
                         onClick={() => handleDateClick(dayNum)}
-                        className={`h-11 sm:h-14 rounded-xl flex flex-col items-center justify-center font-heading font-bold text-sm sm:text-base transition-all duration-200 cursor-pointer ${
+                        className={`min-h-[46px] h-12 sm:h-14 rounded-xl flex flex-col items-center justify-center font-heading font-bold text-sm sm:text-base transition-all duration-150 cursor-pointer active:scale-95 ${
                           isPast
                             ? 'bg-zinc-900/30 text-zinc-600 border border-transparent cursor-not-allowed'
                             : isSelected
                             ? 'bg-[#1EB8BF] text-black font-black border-2 border-white shadow-[0_0_20px_rgba(30,184,191,0.8)] scale-105 z-10'
-                            : 'bg-zinc-900/70 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#1EB8BF]/60'
+                            : 'bg-zinc-900/70 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#1EB8BF]/60 active:bg-[#1EB8BF]/30'
                         }`}
                       >
                         <span>{dayNum}</span>
@@ -654,7 +697,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
               {/* ON-DEMAND BOTTOM TIME SLOTS PANEL (Appears upon clicking a date)           */}
               {/* ========================================================================= */}
               {selectedDateStr ? (
-                <div className="pt-4 border-t border-white/15 animate-in fade-in slide-in-from-top-4 duration-300 space-y-4">
+                <div id="turnos-disponibles" className="pt-4 border-t border-white/15 animate-in fade-in slide-in-from-top-4 duration-300 space-y-4 scroll-mt-16">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <Clock className="w-5 h-5 text-[#F2C700]" />
@@ -687,12 +730,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                             key={slot.id}
                             type="button"
                             disabled={isBooked}
-                            onClick={() => setSelectedSlotId(slot.id)}
-                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer ${
+                            onClick={() => handleSlotSelect(slot.id)}
+                            className={`p-4 rounded-2xl border-2 text-left transition-all duration-200 flex flex-col justify-between cursor-pointer min-h-[72px] active:scale-[0.99] ${
                               isBooked
                                 ? 'bg-zinc-950/50 border-zinc-800 text-zinc-500 cursor-not-allowed opacity-60'
                                 : isSelected
-                                ? 'bg-gradient-to-br from-zinc-900 to-black border-[#F2C700] text-white shadow-[0_0_20px_rgba(242,199,0,0.35)] scale-[1.02]'
+                                ? 'bg-gradient-to-br from-zinc-900 to-black border-[#F2C700] text-white shadow-[0_0_20px_rgba(242,199,0,0.35)] scale-[1.01]'
                                 : 'bg-black/60 border-white/15 text-zinc-200 hover:border-[#1EB8BF] hover:bg-zinc-900/60'
                             }`}
                           >
@@ -708,7 +751,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
                                   isSelected ? 'bg-[#F2C700] text-black' : 'bg-[#1EB8BF]/20 text-[#1EB8BF] border border-[#1EB8BF]/40'
                                 }`}>
-                                  {isSelected ? 'Seleccionado' : 'Disponible'}
+                                  {isSelected ? 'Seleccionado ✓' : 'Disponible'}
                                 </span>
                               )}
                             </div>
@@ -739,8 +782,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
             {/* ========================================================================= */}
             {selectedSlotId && (
               <form 
+                id="formulario-reserva"
                 onSubmit={handleSubmit}
-                className="bg-black/80 backdrop-blur-md rounded-3xl border-2 border-white/20 p-5 sm:p-8 space-y-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300"
+                className="bg-black/80 backdrop-blur-md rounded-3xl border-2 border-white/20 p-5 sm:p-8 space-y-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300 scroll-mt-16"
               >
                 <div className="flex items-center gap-2.5 border-b border-white/10 pb-4">
                   <div className="w-8 h-8 rounded-xl bg-[#ED3078] text-white font-black text-sm flex items-center justify-center shrink-0">
@@ -765,10 +809,11 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     <input
                       type="text"
                       required
+                      autoComplete="name"
                       placeholder="Ej: Mariana Gómez"
                       value={parentName}
                       onChange={(e) => setParentName(e.target.value)}
-                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
+                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-3 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
                     />
                   </div>
 
@@ -780,10 +825,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     <input
                       type="tel"
                       required
+                      inputMode="tel"
+                      autoComplete="tel"
                       placeholder="Ej: 221 456-7890"
                       value={parentPhone}
                       onChange={(e) => setParentPhone(e.target.value)}
-                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-[#25D366] focus:outline-none"
+                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-3 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-[#25D366] focus:outline-none"
                     />
                   </div>
 
@@ -798,7 +845,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       placeholder="Ej: Felipe"
                       value={childName}
                       onChange={(e) => setChildName(e.target.value)}
-                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-3 text-xs sm:text-sm text-white placeholder-zinc-500 focus:border-[#ED3078] focus:outline-none"
+                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-3 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-[#ED3078] focus:outline-none"
                     />
                   </div>
 
@@ -810,7 +857,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     <select
                       value={childAge}
                       onChange={(e) => setChildAge(Number(e.target.value))}
-                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-3 py-3 text-xs sm:text-sm text-white focus:border-[#1EB8BF] focus:outline-none cursor-pointer"
+                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-3 py-3 text-base sm:text-sm text-white focus:border-[#1EB8BF] focus:outline-none cursor-pointer min-h-[48px]"
                     >
                       {[6, 7, 8, 9, 10, 11, 12].map((age) => (
                         <option key={age} value={age}>{age} años</option>

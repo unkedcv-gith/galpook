@@ -13,9 +13,9 @@ const firebaseConfig = {
   measurementId: "G-L2DMEWV3GJ"
 };
 
-// Silence transient connection retry messages
+// Silence internal connection retry and offline notices from Firestore logger
 try {
-  setLogLevel('error');
+  setLogLevel('silent');
 } catch {
   // Ignore if already configured
 }
@@ -26,7 +26,8 @@ export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfi
 let firestoreInstance;
 try {
   firestoreInstance = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
+    experimentalAutoDetectLongPolling: true,
+    ignoreUndefinedProperties: true,
   });
 } catch {
   firestoreInstance = getFirestore(app);

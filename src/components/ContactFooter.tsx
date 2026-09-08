@@ -100,16 +100,16 @@ export const ContactFooter: React.FC<ContactFooterProps> = ({
 
         {/* Bottom Bar with Subtle Admin Access */}
         <div className="pt-6 border-t border-zinc-800/80 text-xs text-zinc-500 font-medium flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span>© {new Date().getFullYear()} El Galpón. Todos los derechos reservados.</span>
             <span className="text-zinc-700">•</span>
             <button
               onClick={onOpenAdmin}
-              className="text-zinc-600 hover:text-zinc-400 transition-colors inline-flex items-center gap-1 text-[11px] cursor-pointer"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-transparent hover:bg-zinc-900/80 border border-transparent hover:border-zinc-800 text-zinc-600 hover:text-zinc-400 text-[11px] font-normal transition-all cursor-pointer group select-none touch-manipulation active:scale-95"
               title="Acceso staff"
             >
-              <Shield className="w-3 h-3 text-zinc-600 hover:text-zinc-400" />
-              <span>Gestión</span>
+              <Shield className="w-3 h-3 text-zinc-600 group-hover:text-zinc-400 pointer-events-none shrink-0 transition-colors" />
+              <span className="pointer-events-none">Gestión</span>
             </button>
           </div>
           <div className="text-[11px] font-black text-[#F2C700] uppercase tracking-wider">

@@ -659,22 +659,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
         </div>
 
         {/* Branch Switcher & Quick Actions */}
-        <div className="flex items-center gap-2.5 self-end md:self-auto flex-wrap">
+        <div className="flex items-center gap-2 self-start sm:self-end md:self-auto flex-wrap w-full md:w-auto justify-between sm:justify-end">
           
           {/* Realtime Firebase Sync Badge & Button */}
           <button
             type="button"
             onClick={handleSyncFirestore}
             disabled={isSyncingFirebase}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 hover:text-white transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs text-zinc-300 hover:text-white transition-all cursor-pointer shadow-sm min-h-[38px]"
             title="Sincronizar manualmente con la base de datos de Firebase"
           >
             <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingFirebase ? 'animate-spin text-amber-400' : ''}`} />
             <span className="font-bold text-[11px] uppercase tracking-wider">{syncStatusMsg}</span>
           </button>
 
-          <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded-xl px-2.5 py-1.5 text-xs">
-            <MapPin className="w-3.5 h-3.5 text-[#1EB8BF]" />
+          <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-xs min-h-[38px]">
+            <MapPin className="w-3.5 h-3.5 text-[#1EB8BF] shrink-0" />
             {isFranquista ? (
               <span className="font-black text-white">{currentUser?.assignedBranchName || 'Mi Sucursal'}</span>
             ) : (
@@ -695,14 +695,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
           <button
             onClick={onCloseAdmin}
-            className="px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-black text-white uppercase transition-colors cursor-pointer"
+            className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-xs font-black text-white uppercase transition-colors cursor-pointer min-h-[38px] flex items-center justify-center"
           >
             Volver a la Web
           </button>
 
           <button
             onClick={handleLogout}
-            className="p-2 rounded-xl bg-zinc-900 hover:bg-[#ED3078]/20 text-zinc-300 hover:text-[#ED3078] border border-zinc-700 transition-colors cursor-pointer"
+            className="p-2.5 rounded-xl bg-zinc-900 hover:bg-[#ED3078]/20 text-zinc-300 hover:text-[#ED3078] border border-zinc-700 transition-colors cursor-pointer min-h-[38px] flex items-center justify-center"
             title="Cerrar Sesión"
           >
             <LogOut className="w-4 h-4" />
@@ -722,7 +722,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
             
             <button
               onClick={() => setActiveTab('reservas')}
-              className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                 activeTab === 'reservas'
                   ? 'bg-[#1EB8BF] text-black shadow-md'
                   : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
@@ -737,7 +737,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
             <button
               onClick={() => setActiveTab('consultas')}
-              className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                 activeTab === 'consultas'
                   ? 'bg-[#F2C700] text-black shadow-md'
                   : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
@@ -754,7 +754,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
             {currentUser?.role !== 'admin' && (
               <button
                 onClick={() => setActiveTab('bloqueo')}
-                className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                   activeTab === 'bloqueo'
                     ? 'bg-[#ED3078] text-white shadow-md'
                     : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
@@ -767,7 +767,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
             <button
               onClick={() => setActiveTab('nueva')}
-              className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                 activeTab === 'nueva'
                   ? 'bg-[#A3BA13] text-black shadow-md'
                   : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
@@ -781,7 +781,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
             {isSuperAdmin && (
               <button
                 onClick={() => setActiveTab('sucursales')}
-                className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                   activeTab === 'sucursales'
                     ? 'bg-[#ED3078] text-white shadow-md'
                     : 'bg-black/40 border border-[#ED3078]/40 text-[#ED3078] hover:bg-[#ED3078]/10'
@@ -800,7 +800,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
               <>
                 <button
                   onClick={() => setActiveTab('usuarios')}
-                  className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                     activeTab === 'usuarios'
                       ? 'bg-[#F2C700] text-black shadow-md'
                       : 'bg-black/40 border border-[#F2C700]/40 text-[#F2C700] hover:bg-[#F2C700]/10'
@@ -812,7 +812,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
                 <button
                   onClick={() => setActiveTab('precios')}
-                  className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                     activeTab === 'precios'
                       ? 'bg-[#A3BA13] text-black shadow-md'
                       : 'bg-black/40 border border-[#A3BA13]/40 text-[#A3BA13] hover:bg-[#A3BA13]/10'
@@ -825,7 +825,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
                 <button
                   onClick={() => setActiveTab('backup')}
-                  className={`p-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
                     activeTab === 'backup'
                       ? 'bg-emerald-400 text-black shadow-md'
                       : 'bg-black/40 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
@@ -892,8 +892,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                 {/* Module Quick Actions: View Selector & Column Toggle */}
                 <div className="flex flex-wrap items-center gap-2.5">
 
-                  {/* 1 Col / 2 Cols Grid Switcher */}
-                  <div className="inline-flex p-1 rounded-2xl bg-black border border-zinc-800">
+                  {/* 1 Col / 2 Cols Grid Switcher (Desktop / Tablet only) */}
+                  <div className="hidden sm:inline-flex p-1 rounded-2xl bg-black border border-zinc-800">
                     <button
                       type="button"
                       onClick={() => setViewColumns('2col')}
@@ -905,7 +905,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       title="Ver fichas a 2 columnas"
                     >
                       <LayoutGrid className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">2 Cols</span>
+                      <span>2 Cols</span>
                     </button>
 
                     <button
@@ -919,16 +919,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       title="Ver fichas a 1 columna completa"
                     >
                       <Columns className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">1 Col</span>
+                      <span>1 Col</span>
                     </button>
                   </div>
 
                   {/* View Mode Selector (Semanal / Mensual / Todas) */}
-                  <div className="inline-flex p-1 rounded-2xl bg-black border border-zinc-800">
+                  <div className="inline-flex p-1 rounded-2xl bg-black border border-zinc-800 w-full sm:w-auto justify-around sm:justify-start">
                     <button
                       type="button"
                       onClick={() => setTimeFilterMode('weekly')}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`flex-1 sm:flex-initial px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                         timeFilterMode === 'weekly'
                           ? 'bg-amber-400 text-black shadow-sm'
                           : 'text-zinc-400 hover:text-white'
@@ -941,7 +941,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     <button
                       type="button"
                       onClick={() => setTimeFilterMode('monthly')}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`flex-1 sm:flex-initial px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                         timeFilterMode === 'monthly'
                           ? 'bg-amber-400 text-black shadow-sm'
                           : 'text-zinc-400 hover:text-white'
@@ -954,7 +954,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     <button
                       type="button"
                       onClick={() => setTimeFilterMode('all')}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`flex-1 sm:flex-initial px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-black uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                         timeFilterMode === 'all'
                           ? 'bg-amber-400 text-black shadow-sm'
                           : 'text-zinc-400 hover:text-white'
@@ -1101,7 +1101,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
               </div>
 
               {/* SEARCH & STATUS FILTER BAR */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/80 border border-zinc-800 rounded-2xl p-3.5">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-black/80 border border-zinc-800 rounded-2xl p-3 sm:p-3.5">
                 <div className="relative w-full sm:w-80">
                   <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-500" />
                   <input
@@ -1109,18 +1109,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     placeholder="Buscar por niño, adulto, celular..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-9 pr-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
+                    className="w-full bg-zinc-900 border border-zinc-700 rounded-xl pl-9 pr-3.5 py-2.5 text-xs text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none min-h-[40px]"
                   />
                 </div>
 
-                <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto">
+                <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
                   {['todos', 'pending', 'approved', 'rejected'].map((status) => (
                     <button
                       key={status}
                       onClick={() => setFilterStatus(status)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase transition-all cursor-pointer whitespace-nowrap ${
+                      className={`flex-1 sm:flex-initial px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-black uppercase transition-all cursor-pointer whitespace-nowrap text-center shrink-0 ${
                         filterStatus === status
-                          ? 'bg-white text-black font-black'
+                          ? 'bg-white text-black font-black shadow-sm'
                           : 'bg-zinc-800 text-zinc-400 hover:text-white'
                       }`}
                     >
@@ -1429,13 +1429,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       </div>
 
                       {/* CARD FOOTER: Logical Action Toolbar */}
-                      <div className="mt-4 pt-3.5 border-t border-zinc-800/90 flex flex-wrap items-center justify-between gap-2">
+                      <div className="mt-4 pt-3.5 border-t border-zinc-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         
                         {/* Primary Workflow Actions */}
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                           
                           {/* 1. Terms & Conditions Link Actions */}
-                          <div className="flex items-center gap-1.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 w-full sm:w-auto">
                             {!isWaiverSigned ? (
                               <a
                                 href={generateWaiverWhatsAppMessage(res)}
@@ -1445,20 +1445,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                                   markReservationTermsSent(res.id);
                                   setTimeout(loadData, 300);
                                 }}
-                                className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-[#25D366] text-emerald-300 hover:text-black border border-emerald-500/50 font-black text-[11px] uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
+                                className="flex-1 sm:flex-initial px-3.5 py-2 min-h-[42px] rounded-xl bg-emerald-500/20 hover:bg-[#25D366] text-emerald-300 hover:text-black border border-emerald-500/50 font-black text-xs uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md text-center"
                                 title="Enviar enlace de Términos y Condiciones al WhatsApp del usuario (inicia retención de 40 minutos)"
                               >
-                                <MessageCircle className="w-3.5 h-3.5 text-[#25D366] group-hover:text-black" />
+                                <MessageCircle className="w-4 h-4 text-[#25D366] group-hover:text-black shrink-0" />
                                 <span>ENVIAR TÉRMINOS Y CONDICIONES</span>
                               </a>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => setWaiverDocReservation(res)}
-                                className="px-2.5 py-1.5 rounded-xl bg-teal-500/20 hover:bg-teal-500 text-teal-300 hover:text-black border border-teal-500/40 font-black text-[11px] uppercase flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                className="flex-1 sm:flex-initial px-3 py-2 min-h-[42px] rounded-xl bg-teal-500/20 hover:bg-teal-500 text-teal-300 hover:text-black border border-teal-500/40 font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                                 title="Ver Términos y Condiciones aceptados"
                               >
-                                <FileText className="w-3.5 h-3.5" />
+                                <FileText className="w-4 h-4 shrink-0" />
                                 <span>Ver Términos Aceptados</span>
                               </button>
                             )}
@@ -1473,10 +1473,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                                 navigator.clipboard.writeText(link);
                                 alert('¡Enlace del formulario copiado al portapapeles! Se inició el plazo de retención por 40 minutos.');
                               }}
-                              className="p-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 transition-colors cursor-pointer"
+                              className="p-2.5 min-h-[42px] min-w-[42px] rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 transition-colors cursor-pointer flex items-center justify-center shrink-0"
                               title="Copiar enlace directo al portapapeles e iniciar plazo de 40 min"
                             >
-                              <ExternalLink className="w-3.5 h-3.5" />
+                              <ExternalLink className="w-4 h-4" />
                             </button>
 
                             {/* Re-activate 40 min if expired and not completed */}
@@ -1488,35 +1488,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                                   loadData();
                                   alert('¡Se reinició el plazo de 40 minutos! El turno vuelve a figurar retenido en el almanaque.');
                                 }}
-                                className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 font-black text-[11px] uppercase flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                className="flex-1 sm:flex-initial px-3 py-2 min-h-[42px] rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                                 title="Reiniciar el plazo de retención por otros 40 minutos"
                               >
-                                <RefreshCw className="w-3.5 h-3.5" />
+                                <RefreshCw className="w-3.5 h-3.5 shrink-0" />
                                 <span>Reactivar 40 min</span>
                               </button>
                             )}
                           </div>
 
                           {/* 2. Confirmation Action */}
-                          <div>
+                          <div className="w-full sm:w-auto">
                             {isPending ? (
                               <button
                                 type="button"
                                 onClick={() => handleUpdateStatus(res.id, 'approved')}
-                                className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-heading font-black text-[11px] uppercase flex items-center justify-center gap-1 transition-all cursor-pointer shadow-md"
+                                className="w-full sm:w-auto px-3.5 py-2 min-h-[42px] rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-heading font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
                                 title="Confirmar y habilitar la reserva"
                               >
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                <Check className="w-4 h-4 stroke-[3] shrink-0" />
                                 <span>Confirmar Reserva</span>
                               </button>
                             ) : isApproved ? (
                               <button
                                 type="button"
                                 onClick={() => handleUpdateStatus(res.id, 'pending')}
-                                className="px-2.5 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-zinc-800 text-emerald-300 hover:text-white border border-emerald-700/60 font-bold text-[11px] uppercase transition-all cursor-pointer flex items-center justify-center gap-1"
+                                className="w-full sm:w-auto px-3 py-2 min-h-[42px] rounded-xl bg-emerald-950/80 hover:bg-zinc-800 text-emerald-300 hover:text-white border border-emerald-700/60 font-bold text-xs uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5"
                                 title="Cambiar a estado pendiente"
                               >
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                                 <span>Reserva Confirmada (Cambiar)</span>
                               </button>
                             ) : null}
@@ -1525,16 +1525,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                         </div>
 
                         {/* Right Group: Edit, Direct Chat & Delete */}
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end pt-1 sm:pt-0">
                           
                           {/* EDIT RESERVATION BUTTON */}
                           <button
                             type="button"
                             onClick={() => setReservationToEdit(res)}
-                            className="p-1.5 px-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-bold text-[11px] uppercase flex items-center gap-1 transition-all cursor-pointer"
+                            className="flex-1 sm:flex-initial min-h-[38px] p-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-bold text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                             title="Editar datos de la ficha de reserva"
                           >
-                            <Edit2 className="w-3 h-3 text-amber-400" />
+                            <Edit2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                             <span>Editar</span>
                           </button>
 
@@ -1545,10 +1545,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                             )}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="p-1.5 px-2 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366] text-[#25D366] hover:text-black border border-[#25D366]/40 font-bold text-[11px] uppercase flex items-center gap-1 transition-all cursor-pointer"
+                            className="flex-1 sm:flex-initial min-h-[38px] p-2 px-3 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366] text-[#25D366] hover:text-black border border-[#25D366]/40 font-bold text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                             title="Abrir chat directo de WhatsApp"
                           >
-                            <MessageCircle className="w-3 h-3" />
+                            <MessageCircle className="w-3.5 h-3.5 shrink-0" />
                             <span>Chat</span>
                           </a>
 
@@ -1556,10 +1556,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                           <button
                             type="button"
                             onClick={() => setReservationToDelete(res)}
-                            className="p-1.5 rounded-xl bg-zinc-950 hover:bg-red-950/60 text-zinc-500 hover:text-red-400 border border-zinc-800 hover:border-red-800/50 transition-colors cursor-pointer"
+                            className="min-h-[38px] min-w-[38px] p-2 rounded-xl bg-zinc-950 hover:bg-red-950/60 text-zinc-500 hover:text-red-400 border border-zinc-800 hover:border-red-800/50 transition-colors cursor-pointer flex items-center justify-center shrink-0"
                             title="Eliminar Reserva"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
 
@@ -1613,9 +1613,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-[#25D366] text-black font-black text-xs flex items-center gap-1.5"
+                        className="w-full sm:w-auto px-4 py-2.5 min-h-[42px] rounded-xl bg-[#25D366] text-black font-black text-xs uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md text-center"
                       >
-                        <MessageCircle className="w-3.5 h-3.5" /> Responder por WhatsApp
+                        <MessageCircle className="w-4 h-4 shrink-0" /> Responder por WhatsApp
                       </a>
                     </div>
                   </div>
@@ -1733,7 +1733,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300 uppercase">Fecha</label>
                   <input
@@ -1741,7 +1741,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     required
                     value={manualDate}
                     onChange={(e) => handleManualDateChange(e.target.value)}
-                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white min-h-[42px]"
                   />
                 </div>
 
@@ -1750,7 +1750,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   <select
                     value={manualSlot}
                     onChange={(e) => setManualSlot(e.target.value)}
-                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white min-h-[42px]"
                   >
                     {getAvailableSlotsForDate(manualDate).map((s) => (
                       <option key={s.id} value={s.id}>{s.title} ({s.timeRange})</option>
@@ -1759,7 +1759,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300 uppercase">Nombre Adulto *</label>
                   <input
@@ -1767,7 +1767,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     required
                     value={manualParent}
                     onChange={(e) => setManualParent(e.target.value)}
-                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white min-h-[42px]"
                   />
                 </div>
 
@@ -1777,12 +1777,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     type="tel"
                     value={manualPhone}
                     onChange={(e) => setManualPhone(e.target.value)}
-                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white min-h-[42px]"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300 uppercase">Cumpleañer@ *</label>
                   <input
@@ -1790,7 +1790,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     required
                     value={manualChild}
                     onChange={(e) => setManualChild(e.target.value)}
-                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white min-h-[42px]"
                   />
                 </div>
 
@@ -1802,7 +1802,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     max="12"
                     value={manualAge}
                     onChange={(e) => setManualAge(Number(e.target.value))}
-                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white min-h-[42px]"
                   />
                 </div>
               </div>
@@ -1819,7 +1819,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
               <button
                 type="submit"
-                className="w-full bg-[#A3BA13] text-black font-black text-xs uppercase py-3.5 rounded-xl transition-all cursor-pointer"
+                className="w-full bg-[#A3BA13] hover:bg-[#b8d116] text-black font-black text-xs uppercase py-3.5 min-h-[46px] rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
               >
                 Guardar Reserva Manual
               </button>

@@ -394,11 +394,11 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
           </div>
 
           {/* FOOTER ACTIONS */}
-          <div className="flex items-center justify-end gap-3 pt-2 border-t border-zinc-800">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2.5 pt-2 border-t border-zinc-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-bold text-xs uppercase transition-colors cursor-pointer"
+              className="w-full sm:w-auto min-h-[42px] px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-bold text-xs uppercase transition-colors cursor-pointer flex items-center justify-center"
             >
               Cancelar
             </button>
@@ -406,7 +406,7 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
             <button
               type="submit"
               disabled={isSaving}
-              className="px-6 py-2.5 rounded-xl bg-[#1EB8BF] hover:bg-[#19a1a7] text-black font-heading font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer shadow-lg disabled:opacity-50"
+              className="w-full sm:w-auto min-h-[44px] px-6 py-2.5 rounded-xl bg-[#1EB8BF] hover:bg-[#19a1a7] text-black font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg disabled:opacity-50"
             >
               {saveSuccess ? (
                 <>
