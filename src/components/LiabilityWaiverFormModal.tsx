@@ -33,7 +33,11 @@ import {
   fetchReservationByIdAsync, 
   formatWhatsAppNumber, 
   formatDateDDMMAAAA,
-  getPricingSettings
+  getPricingSettings,
+  markReservationTermsOpened,
+  getRemainingReservationSeconds,
+  isReservationExpired,
+  isReservationCircuitCompleted
 } from '../services/storage';
 import { DEFAULT_BANK_INFO, BRAND_INFO } from '../data/initialData';
 
@@ -87,6 +91,23 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
   const [savedSignatureDataUrl, setSavedSignatureDataUrl] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  // 40-Minute Hold countdown state
+  const [remainingSeconds, setRemainingSeconds] = useState<number>(40 * 60);
+
+  useEffect(() => {
+    if (!isOpen || !reservation || isSubmitted) return;
+    if (isReservationCircuitCompleted(reservation)) return;
+
+    const updateTimer = () => {
+      const sec = getRemainingReservationSeconds(reservation);
+      setRemainingSeconds(sec);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [isOpen, reservation, isSubmitted]);
+
   const handleCopy = (text: string, fieldId: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(fieldId);
@@ -115,6 +136,13 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
             setChildAge(found.childAge || (found.liabilityWaiver && found.liabilityWaiver.childAge) || 7);
             setEmergencyContactName(found.parentName || '');
             setEmergencyContactPhone(found.parentPhone || '');
+
+            // Record terms opened (and start 40-min hold timer if not already running)
+            if (!found.termsOpenedAt || !found.termsSentAt) {
+              markReservationTermsOpened(found.id).then((updated) => {
+                if (updated) setReservation(updated);
+              });
+            }
 
             if (found.liabilityWaiver && found.liabilityWaiver.status === 'signed') {
               setIsSubmitted(true);
@@ -419,6 +447,51 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
               {step === 3 && '3/4 Normas & Firma'}
               {step === 4 && '4/4 Envío de Seña'}
             </span>
+          </div>
+        )}
+
+        {/* 40-MINUTE HOLD STATUS BANNER */}
+        {!isSubmitted && reservation && !isReservationCircuitCompleted(reservation) && (
+          <div className={`px-4 py-2.5 border-b flex flex-wrap items-center justify-between gap-2.5 text-xs transition-colors ${
+            remainingSeconds > 0
+              ? 'bg-amber-500/10 border-amber-500/30 text-amber-200'
+              : 'bg-rose-950/70 border-rose-600/60 text-rose-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              <Clock className={`w-4 h-4 shrink-0 ${remainingSeconds > 0 ? 'text-amber-400 animate-pulse' : 'text-rose-400'}`} />
+              <span className="font-bold">
+                {remainingSeconds > 0 ? (
+                  <>
+                    <strong className="text-white uppercase tracking-tight mr-1">IMPORTANTE:</strong> 
+                    A partir de ingresar al formulario tenés 40 minutos para mantener tu día y hora de reserva.
+                  </>
+                ) : (
+                  <>
+                    <strong className="text-rose-300 uppercase tracking-tight mr-1">TIEMPO AGOTADO:</strong> 
+                    Han transcurrido los 40 minutos. Esta fecha y hora han vuelto a quedar disponibles en el almanaque.
+                  </>
+                )}
+              </span>
+            </div>
+
+            {remainingSeconds > 0 ? (
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="text-[11px] text-zinc-400 font-bold hidden sm:inline">Restan:</span>
+                <span className="font-mono font-black text-sm px-2.5 py-0.5 rounded-lg bg-black/90 border border-amber-500/50 text-amber-300 shadow-inner">
+                  {Math.floor(remainingSeconds / 60).toString().padStart(2, '0')}:
+                  {(remainingSeconds % 60).toString().padStart(2, '0')} min
+                </span>
+              </div>
+            ) : (
+              <a
+                href={`https://api.whatsapp.com/send?phone=${destinationPhone}&text=${encodeURIComponent('¡Hola El Galpón! Quería consultar por la disponibilidad para el cumpleaños de ' + (childFullName || reservation.childName) + ' en ' + reservation.branchName + '.')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500 text-rose-200 hover:text-black border border-rose-500/50 font-black text-[11px] uppercase transition-colors shrink-0"
+              >
+                Consultar por WhatsApp
+              </a>
+            )}
           </div>
         )}
 

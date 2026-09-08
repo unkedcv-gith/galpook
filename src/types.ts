@@ -93,6 +93,10 @@ export interface Reservation {
   // Liability Waiver Integration
   waiverStatus?: 'pending' | 'signed';
   liabilityWaiver?: LiabilityWaiver;
+
+  // 40-minute expiration after sending terms and conditions
+  termsSentAt?: string; // ISO timestamp when terms and conditions were sent
+  termsOpenedAt?: string; // ISO timestamp when user entered the waiver form
 }
 
 export interface Inquiry {

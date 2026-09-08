@@ -31,7 +31,12 @@ import {
   getLastBackupDate,
   getCustomBaseUrl,
   setCustomBaseUrl,
-  getPricingSettings
+  getPricingSettings,
+  markReservationTermsSent,
+  isReservationExpired,
+  getRemainingReservationSeconds,
+  resetReservationExpiration,
+  isReservationCircuitCompleted
 } from '../services/storage';
 import { ViewWaiverDocumentModal } from './ViewWaiverDocumentModal';
 import { ApproveDepositModal } from './ApproveDepositModal';
@@ -187,6 +192,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const [backupSuccessMsg, setBackupSuccessMsg] = useState(false);
   const [isUrlConfigModalOpen, setIsUrlConfigModalOpen] = useState(false);
   const [customUrlInput, setCustomUrlInput] = useState<string>(() => getCustomBaseUrl());
+  const [adminTimerTick, setAdminTimerTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setAdminTimerTick((t) => t + 1);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadData = () => {
     const loadedBranches = getBranches();
@@ -1103,6 +1116,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   const isPending = res.status === 'pending';
                   const isRejected = res.status === 'rejected';
                   const isWaiverSigned = res.liabilityWaiver?.status === 'signed' || res.waiverStatus === 'signed';
+                  const isCircuitComplete = isReservationCircuitCompleted(res);
+                  const isExpired = isReservationExpired(res);
+                  const remainingHoldSeconds = getRemainingReservationSeconds(res);
 
                   // Calculate missing data / pending requirements
                   const missingItems: string[] = [];
@@ -1125,6 +1141,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     topGlowClass = 'ring-zinc-800';
                     statusBadgeText = 'Reserva Cancelada';
                     statusBadgeColor = 'bg-zinc-800 text-zinc-400 border-zinc-700';
+                  } else if (isExpired) {
+                    topThemeClass = 'bg-gradient-to-r from-rose-600 to-red-600';
+                    topGlowClass = 'ring-rose-600/20';
+                    statusBadgeText = 'Expirada (+40 min - Turno Libre)';
+                    statusBadgeColor = 'bg-rose-500/20 text-rose-300 border-rose-500/40';
                   } else if (isCriticalMissing) {
                     topThemeClass = 'bg-gradient-to-r from-rose-500 via-amber-500 to-rose-500';
                     topGlowClass = 'ring-rose-500/20';
@@ -1257,6 +1278,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                               <span>{isWaiverSigned ? 'Términos: ACEPTADOS' : 'Términos: PENDIENTES'}</span>
                             </span>
 
+                            {/* 40-Minute Hold Status Badge */}
+                            {!isRejected && (
+                              <span
+                                className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 border ${
+                                  isCircuitComplete
+                                    ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                    : isExpired
+                                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
+                                    : res.termsSentAt
+                                    ? 'bg-amber-500/15 text-amber-300 border-amber-500/35'
+                                    : 'bg-zinc-800/80 text-zinc-400 border-zinc-700/60'
+                                }`}
+                              >
+                                {isCircuitComplete ? (
+                                  <>
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                    <span>Circuito: COMPLETADO</span>
+                                  </>
+                                ) : isExpired ? (
+                                  <>
+                                    <AlertTriangle className="w-3 h-3 text-rose-400" />
+                                    <span>Retención 40m: VENCIDA (Turno Libre)</span>
+                                  </>
+                                ) : res.termsSentAt ? (
+                                  <>
+                                    <Clock className="w-3 h-3 text-amber-400 animate-pulse" />
+                                    <span>Retención: {Math.ceil(remainingHoldSeconds / 60)} min restantes</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Clock className="w-3 h-3 text-zinc-500" />
+                                    <span>Términos sin enviar (40m sin iniciar)</span>
+                                  </>
+                                )}
+                              </span>
+                            )}
+
                             {/* Missing summary warning badge if items pending */}
                             {missingItems.length > 0 && !isRejected && (
                               <span className="text-[10px] text-zinc-400 flex items-center gap-1 pl-1">
@@ -1302,14 +1360,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                           
                           {/* 1. Terms & Conditions Link Actions */}
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             {!isWaiverSigned ? (
                               <a
                                 href={generateWaiverWhatsAppMessage(res)}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={() => {
+                                  markReservationTermsSent(res.id);
+                                  setTimeout(loadData, 300);
+                                }}
                                 className="px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-[#25D366] text-emerald-300 hover:text-black border border-emerald-500/50 font-black text-[11px] uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
-                                title="Enviar enlace de Términos y Condiciones al WhatsApp del usuario (incluye datos de seña)"
+                                title="Enviar enlace de Términos y Condiciones al WhatsApp del usuario (inicia retención de 40 minutos)"
                               >
                                 <MessageCircle className="w-3.5 h-3.5 text-[#25D366] group-hover:text-black" />
                                 <span>ENVIAR TÉRMINOS Y CONDICIONES</span>
@@ -1330,15 +1392,34 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                             <button
                               type="button"
                               onClick={() => {
+                                markReservationTermsSent(res.id);
+                                setTimeout(loadData, 300);
                                 const link = generateWaiverShareLink(res.id);
                                 navigator.clipboard.writeText(link);
-                                alert('¡Enlace del formulario copiado al portapapeles!');
+                                alert('¡Enlace del formulario copiado al portapapeles! Se inició el plazo de retención por 40 minutos.');
                               }}
                               className="p-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 transition-colors cursor-pointer"
-                              title="Copiar enlace directo al portapapeles"
+                              title="Copiar enlace directo al portapapeles e iniciar plazo de 40 min"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                             </button>
+
+                            {/* Re-activate 40 min if expired and not completed */}
+                            {isExpired && !isCircuitComplete && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  await resetReservationExpiration(res.id);
+                                  loadData();
+                                  alert('¡Se reinició el plazo de 40 minutos! El turno vuelve a figurar retenido en el almanaque.');
+                                }}
+                                className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 font-black text-[11px] uppercase flex items-center justify-center gap-1 transition-all cursor-pointer"
+                                title="Reiniciar el plazo de retención por otros 40 minutos"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                                <span>Reactivar 40 min</span>
+                              </button>
+                            )}
                           </div>
 
                           {/* 2. Confirmation Action */}

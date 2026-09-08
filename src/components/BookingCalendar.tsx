@@ -10,7 +10,8 @@ import {
   formatWhatsAppNumber,
   getPricingSettings,
   formatCurrency,
-  listenToPricingSettings
+  listenToPricingSettings,
+  isReservationExpired
 } from '../services/storage';
 import { 
   Calendar as CalendarIcon, 
@@ -158,13 +159,27 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     return dateToCheck < today;
   };
 
+  // Ticking state to automatically refresh 40-min hold expiration status
+  const [timerTick, setTimerTick] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimerTick((t) => t + 1);
+    }, 15000); // Check every 15 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   // Slots availability for selectedDateStr in selectedBranch
   const activeBookingsForSelectedDate = useMemo(() => {
     if (!selectedDateStr) return [];
-    return reservations.filter(
-      (r) => r.date === selectedDateStr && (r.status === 'approved' || r.status === 'pending')
-    );
-  }, [reservations, selectedDateStr]);
+    return reservations.filter((r) => {
+      if (r.date !== selectedDateStr) return false;
+      if (r.status === 'cancelled' || r.status === 'rejected') return false;
+      // If 40 minutes passed from sending terms and conditions without completing the circuit, the slot becomes available again!
+      if (isReservationExpired(r)) return false;
+      return r.status === 'approved' || r.status === 'pending';
+    });
+  }, [reservations, selectedDateStr, timerTick]);
 
   const isDateBlocked = useMemo(() => {
     if (!selectedDateStr) return false;

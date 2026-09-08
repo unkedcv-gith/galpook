@@ -618,12 +618,123 @@ export const generateWaiverShareLink = (reservationId: string): string => {
   }
 };
 
+export const RESERVATION_EXPIRATION_MINUTES = 40;
+export const RESERVATION_EXPIRATION_MS = RESERVATION_EXPIRATION_MINUTES * 60 * 1000;
+
+export const isReservationCircuitCompleted = (reservation: Reservation): boolean => {
+  return (
+    reservation.status === 'approved' ||
+    reservation.depositPaid === true ||
+    reservation.waiverStatus === 'signed' ||
+    reservation.liabilityWaiver?.status === 'signed'
+  );
+};
+
+export const isReservationExpired = (reservation: Reservation): boolean => {
+  if (reservation.status === 'cancelled' || reservation.status === 'rejected') {
+    return true;
+  }
+  // Once the circuit is completed (approved, deposit paid, or terms signed), it never expires
+  if (isReservationCircuitCompleted(reservation)) {
+    return false;
+  }
+  // If terms and conditions have not been sent yet, timer has not started
+  if (!reservation.termsSentAt) {
+    return false;
+  }
+  const sentTime = new Date(reservation.termsSentAt).getTime();
+  if (isNaN(sentTime)) return false;
+  return Date.now() - sentTime > RESERVATION_EXPIRATION_MS;
+};
+
+export const getRemainingReservationSeconds = (reservation: Reservation): number => {
+  if (isReservationCircuitCompleted(reservation)) return Infinity;
+  if (!reservation.termsSentAt) return RESERVATION_EXPIRATION_MINUTES * 60;
+  const sentTime = new Date(reservation.termsSentAt).getTime();
+  if (isNaN(sentTime)) return RESERVATION_EXPIRATION_MINUTES * 60;
+  const diffMs = sentTime + RESERVATION_EXPIRATION_MS - Date.now();
+  return Math.max(0, Math.floor(diffMs / 1000));
+};
+
+export const markReservationTermsSent = async (id: string): Promise<Reservation | null> => {
+  const current = getReservations();
+  let updatedItem: Reservation | null = null;
+  const nowIso = new Date().toISOString();
+
+  const updated = current.map((r) => {
+    if (r.id === id) {
+      updatedItem = {
+        ...r,
+        termsSentAt: nowIso,
+      };
+      return updatedItem;
+    }
+    return r;
+  });
+
+  if (updatedItem) {
+    saveReservations(updated);
+    try {
+      const resRef = doc(db, 'bookings', id);
+      updateDoc(resRef, sanitizeForFirestore({ termsSentAt: nowIso })).catch((e) =>
+        console.warn('Firestore mark termsSentAt notice:', e)
+      );
+    } catch (err) {
+      console.warn('Firestore update termsSentAt error:', err);
+    }
+  }
+
+  return updatedItem;
+};
+
+export const markReservationTermsOpened = async (id: string): Promise<Reservation | null> => {
+  const current = getReservations();
+  let updatedItem: Reservation | null = null;
+  const nowIso = new Date().toISOString();
+
+  const updated = current.map((r) => {
+    if (r.id === id) {
+      const termsSentAt = r.termsSentAt || nowIso;
+      const termsOpenedAt = r.termsOpenedAt || nowIso;
+      updatedItem = {
+        ...r,
+        termsSentAt,
+        termsOpenedAt,
+      };
+      return updatedItem;
+    }
+    return r;
+  });
+
+  if (updatedItem) {
+    saveReservations(updated);
+    try {
+      const resRef = doc(db, 'bookings', id);
+      updateDoc(
+        resRef,
+        sanitizeForFirestore({
+          termsSentAt: (updatedItem as Reservation).termsSentAt,
+          termsOpenedAt: (updatedItem as Reservation).termsOpenedAt,
+        })
+      ).catch((e) => console.warn('Firestore mark termsOpenedAt notice:', e));
+    } catch (err) {
+      console.warn('Firestore update termsOpenedAt error:', err);
+    }
+  }
+
+  return updatedItem;
+};
+
+export const resetReservationExpiration = async (id: string): Promise<Reservation | null> => {
+  return markReservationTermsSent(id);
+};
+
 export const generateWaiverWhatsAppMessage = (reservation: Reservation): string => {
   const waiverUrl = generateWaiverShareLink(reservation.id);
   const cleanPhone = formatWhatsAppNumber(reservation.parentPhone);
   const formattedDate = formatDateDDMMAAAA(reservation.date);
   
-  const text = `¡Hola ${reservation.parentName}! 👋 Confirmamos con éxito la recepción del pedido de reserva para el cumpleaños de *${reservation.childName}* el día *${formattedDate}* (${reservation.slotTime}) en *${reservation.branchName}* 🎪🎉.\n\nPara completar la habilitación del evento, por favor ingresá al siguiente enlace para leer y aceptar los *Términos y Condiciones de la Reserva* (incluye las normas, firma digital y los datos para el envío de la seña):\n\n👉 ${waiverUrl}\n\nQuedamos a disposición para cualquier consulta. ¡Nos vemos pronto para festejar! 🎈`;
+  const text = `¡Hola ${reservation.parentName}! 👋 Confirmamos con éxito la recepción del pedido de reserva para el cumpleaños de *${reservation.childName}* el día *${formattedDate}* (${reservation.slotTime}) en *${reservation.branchName}* 🎪🎉.\n\nPara completar la habilitación del evento, por favor ingresá al siguiente enlace para leer y aceptar los *Términos y Condiciones de la Reserva* (incluye las normas, firma digital y los datos para el envío de la seña):\n\n⚠️ *IMPORTANTE:* a partir de ingresar al formulario tenes 40 minutos para mentener tu día y hora de reserva.\n\n👉 ${waiverUrl}\n\nQuedamos a disposición para cualquier consulta. ¡Nos vemos pronto para festejar! 🎈`;
 
   return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
 };
