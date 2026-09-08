@@ -232,6 +232,182 @@ export const deleteAppUser = async (uid: string): Promise<AppUser[]> => {
 // -------------------------------------------------------------
 // AUTHENTICATION & CURRENT SESSION WITH ROLES
 // -------------------------------------------------------------
+export const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const LOGIN_SECURITY_KEY = 'up_galpon_login_security_v1';
+
+interface LoginSecurityState {
+  clientFailedCount: number;
+  cooldownUntil: number; // timestamp ms
+}
+
+export const getLoginSecurityState = (): { isThrottled: boolean; cooldownSeconds: number } => {
+  try {
+    const raw = localStorage.getItem(LOGIN_SECURITY_KEY);
+    if (!raw) return { isThrottled: false, cooldownSeconds: 0 };
+    const parsed: LoginSecurityState = JSON.parse(raw);
+    const now = Date.now();
+    if (parsed.cooldownUntil && parsed.cooldownUntil > now) {
+      return {
+        isThrottled: true,
+        cooldownSeconds: Math.ceil((parsed.cooldownUntil - now) / 1000),
+      };
+    }
+    return { isThrottled: false, cooldownSeconds: 0 };
+  } catch {
+    return { isThrottled: false, cooldownSeconds: 0 };
+  }
+};
+
+export const recordClientFailedAttempt = (): { isThrottled: boolean; cooldownSeconds: number; clientAttempts: number } => {
+  try {
+    let state: LoginSecurityState = { clientFailedCount: 0, cooldownUntil: 0 };
+    const raw = localStorage.getItem(LOGIN_SECURITY_KEY);
+    if (raw) {
+      state = JSON.parse(raw);
+    }
+    state.clientFailedCount = (state.clientFailedCount || 0) + 1;
+    const now = Date.now();
+
+    // Progressive cooldown against brute force attacks:
+    // 3 failed attempts: 15 seconds cooldown
+    // 4 failed attempts: 30 seconds cooldown
+    // >= 5 failed attempts: 60 seconds cooldown
+    let cooldownMs = 0;
+    if (state.clientFailedCount >= 5) {
+      cooldownMs = 60 * 1000;
+    } else if (state.clientFailedCount >= 4) {
+      cooldownMs = 30 * 1000;
+    } else if (state.clientFailedCount >= 3) {
+      cooldownMs = 15 * 1000;
+    }
+
+    if (cooldownMs > 0) {
+      state.cooldownUntil = now + cooldownMs;
+    }
+
+    localStorage.setItem(LOGIN_SECURITY_KEY, JSON.stringify(state));
+
+    return {
+      isThrottled: cooldownMs > 0,
+      cooldownSeconds: Math.ceil(cooldownMs / 1000),
+      clientAttempts: state.clientFailedCount,
+    };
+  } catch {
+    return { isThrottled: false, cooldownSeconds: 0, clientAttempts: 1 };
+  }
+};
+
+export const resetClientLoginSecurity = (): void => {
+  localStorage.removeItem(LOGIN_SECURITY_KEY);
+};
+
+export const registerFailedUserAttempt = async (
+  usernameOrEmail: string
+): Promise<{ userFound: boolean; isLocked: boolean; attempts: number; remaining: number; user?: AppUser }> => {
+  const clean = usernameOrEmail.trim().toLowerCase();
+  const users = getAppUsers();
+  const user = users.find(
+    (u) => u.username.toLowerCase() === clean || u.email.toLowerCase() === clean
+  );
+
+  if (!user) {
+    return { userFound: false, isLocked: false, attempts: 0, remaining: 0 };
+  }
+
+  const newAttempts = (user.failedAttempts || 0) + 1;
+  user.failedAttempts = newAttempts;
+
+  if (newAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+    user.isLocked = true;
+    user.lockedAt = new Date().toISOString();
+    user.lockedReason = 'Bloqueado por superar 5 intentos fallidos de inicio de sesión';
+  }
+
+  saveAppUsers(users);
+
+  try {
+    const userRef = doc(db, 'users', user.uid);
+    updateDoc(
+      userRef,
+      sanitizeForFirestore({
+        failedAttempts: user.failedAttempts,
+        isLocked: !!user.isLocked,
+        lockedAt: user.lockedAt || null,
+        lockedReason: user.lockedReason || null,
+      })
+    ).catch((e) => console.warn('Firestore failed attempt update notice:', e));
+  } catch (err) {
+    console.warn('Firestore failed attempt update error:', err);
+  }
+
+  return {
+    userFound: true,
+    isLocked: !!user.isLocked,
+    attempts: newAttempts,
+    remaining: Math.max(0, MAX_FAILED_LOGIN_ATTEMPTS - newAttempts),
+    user,
+  };
+};
+
+export const registerSuccessfulUserLogin = async (uid: string): Promise<void> => {
+  resetClientLoginSecurity();
+  const users = getAppUsers();
+  const user = users.find((u) => u.uid === uid);
+  if (user && (user.failedAttempts || user.isLocked)) {
+    user.failedAttempts = 0;
+    saveAppUsers(users);
+    try {
+      const userRef = doc(db, 'users', uid);
+      updateDoc(
+        userRef,
+        sanitizeForFirestore({
+          failedAttempts: 0,
+        })
+      ).catch((e) => console.warn('Firestore reset login attempts notice:', e));
+    } catch (err) {
+      console.warn('Firestore reset login attempts error:', err);
+    }
+  }
+};
+
+export const unlockAppUser = async (uid: string): Promise<AppUser | null> => {
+  const users = getAppUsers();
+  let unlockedUser: AppUser | null = null;
+  const updated = users.map((u) => {
+    if (u.uid === uid) {
+      unlockedUser = {
+        ...u,
+        isLocked: false,
+        failedAttempts: 0,
+        lockedAt: undefined,
+        lockedReason: undefined,
+      };
+      return unlockedUser;
+    }
+    return u;
+  });
+
+  if (unlockedUser) {
+    saveAppUsers(updated);
+    try {
+      const userRef = doc(db, 'users', uid);
+      updateDoc(
+        userRef,
+        sanitizeForFirestore({
+          isLocked: false,
+          failedAttempts: 0,
+          lockedAt: null,
+          lockedReason: null,
+        })
+      ).catch((e) => console.warn('Firestore unlock user notice:', e));
+    } catch (err) {
+      console.warn('Firestore unlock user error:', err);
+    }
+  }
+
+  return unlockedUser;
+};
+
 export const getCurrentUser = (): AppUser | null => {
   try {
     const data = localStorage.getItem(AUTH_USER_KEY);

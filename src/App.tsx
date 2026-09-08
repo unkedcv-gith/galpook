@@ -11,7 +11,7 @@ import { AdminLoginModal } from './components/AdminLoginModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { LiabilityWaiverFormModal } from './components/LiabilityWaiverFormModal';
 import { FloatingChatbot } from './components/FloatingChatbot';
-import { isAdminAuthenticated, syncWithRemoteFirestore } from './services/storage';
+import { isAdminAuthenticated, syncWithRemoteFirestore, logoutUser } from './services/storage';
 
 export default function App() {
   const [isAdminLoginOpen, setIsAdminLoginOpen] = useState(false);
@@ -86,6 +86,36 @@ export default function App() {
       window.removeEventListener('hashchange', checkForWaiverParam);
     };
   }, []);
+
+  // 10-Minute Admin Inactivity Session Auto-Logout
+  useEffect(() => {
+    if (!isAdminLoggedIn) return;
+
+    let lastActivity = Date.now();
+    const resetTimer = () => {
+      lastActivity = Date.now();
+    };
+
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    activityEvents.forEach((ev) => window.addEventListener(ev, resetTimer, { passive: true }));
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - lastActivity;
+      if (elapsed >= 10 * 60 * 1000) {
+        clearInterval(interval);
+        activityEvents.forEach((ev) => window.removeEventListener(ev, resetTimer));
+        logoutUser();
+        setIsAdminLoggedIn(false);
+        setIsAdminDashboardOpen(false);
+        alert('Tu sesión administrativa ha finalizado por inactividad (10 minutos). Por motivos de seguridad se ha cerrado la sesión.');
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      activityEvents.forEach((ev) => window.removeEventListener(ev, resetTimer));
+    };
+  }, [isAdminLoggedIn]);
 
   const handleOpenBooking = () => {
     const calendarElement = document.getElementById('reservar');

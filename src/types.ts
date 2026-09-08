@@ -29,6 +29,12 @@ export interface AppUser {
   phone?: string;
   isActive: boolean;
   createdAt: string;
+
+  // Security and Lockout
+  failedAttempts?: number;
+  isLocked?: boolean;
+  lockedAt?: string;
+  lockedReason?: string;
 }
 
 export interface LiabilityWaiver {

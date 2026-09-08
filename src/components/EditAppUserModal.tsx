@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, User, KeyRound, Shield } from 'lucide-react';
+import { X, User, KeyRound, Shield, AlertOctagon, Unlock } from 'lucide-react';
 import { AppUser } from '../types';
 
 interface EditAppUserModalProps {
@@ -14,6 +14,7 @@ export const EditAppUserModal: React.FC<EditAppUserModalProps> = ({ isOpen, user
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [unlockChecked, setUnlockChecked] = useState(false);
 
   useEffect(() => {
     if (user && isOpen) {
@@ -21,6 +22,7 @@ export const EditAppUserModal: React.FC<EditAppUserModalProps> = ({ isOpen, user
       setUsername(user.username || '');
       setPassword(user.password || '');
       setEmail(user.email || '');
+      setUnlockChecked(false);
     }
   }, [user, isOpen]);
 
@@ -35,6 +37,10 @@ export const EditAppUserModal: React.FC<EditAppUserModalProps> = ({ isOpen, user
     };
     if (password.trim()) {
       payload.password = password.trim();
+    }
+    if (unlockChecked) {
+      payload.isLocked = false;
+      payload.failedAttempts = 0;
     }
     onSave(payload);
   };
@@ -113,6 +119,33 @@ export const EditAppUserModal: React.FC<EditAppUserModalProps> = ({ isOpen, user
                 className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2 text-sm text-white placeholder-zinc-600"
               />
             </div>
+
+            {/* Account Lock Status & Unlock Option */}
+            {user.isLocked && (
+              <div className="p-3.5 bg-rose-950/70 border-2 border-rose-500/70 rounded-2xl space-y-2">
+                <div className="flex items-center gap-2 text-rose-300">
+                  <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />
+                  <div>
+                    <span className="text-xs font-black uppercase block">Cuenta Bloqueada por Seguridad</span>
+                    <span className="text-[11px] text-zinc-300">
+                      Superó los 5 intentos fallidos permitidos.
+                    </span>
+                  </div>
+                </div>
+                <label className="flex items-center gap-2 p-2 bg-black/60 rounded-xl cursor-pointer hover:bg-black/90 transition-colors border border-rose-500/40">
+                  <input
+                    type="checkbox"
+                    checked={unlockChecked}
+                    onChange={(e) => setUnlockChecked(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-400 accent-emerald-500"
+                  />
+                  <span className="text-xs text-emerald-300 font-bold flex items-center gap-1.5">
+                    <Unlock className="w-3.5 h-3.5" />
+                    Desbloquear esta cuenta y reestablecer intentos a 0
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 flex gap-3">

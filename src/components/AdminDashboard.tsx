@@ -36,7 +36,8 @@ import {
   isReservationExpired,
   getRemainingReservationSeconds,
   resetReservationExpiration,
-  isReservationCircuitCompleted
+  isReservationCircuitCompleted,
+  unlockAppUser
 } from '../services/storage';
 import { ViewWaiverDocumentModal } from './ViewWaiverDocumentModal';
 import { ApproveDepositModal } from './ApproveDepositModal';
@@ -98,6 +99,8 @@ import {
   ChevronRight,
   CalendarRange,
   AlertTriangle,
+  AlertOctagon,
+  Unlock,
   LayoutGrid,
   Columns,
   SlidersHorizontal,
@@ -267,9 +270,58 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     };
   }, []);
 
+  // 10-Minute Admin Inactivity Auto-Logout
+  const [remainingInactiveSeconds, setRemainingInactiveSeconds] = useState(600);
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+
+  useEffect(() => {
+    let lastActivity = Date.now();
+
+    const resetActivityTimer = () => {
+      lastActivity = Date.now();
+      setShowInactivityWarning(false);
+    };
+
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    activityEvents.forEach((ev) => window.addEventListener(ev, resetActivityTimer, { passive: true }));
+
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - lastActivity;
+      const remaining = Math.max(0, Math.ceil((10 * 60 * 1000 - elapsed) / 1000));
+      setRemainingInactiveSeconds(remaining);
+
+      if (remaining <= 60 && remaining > 0) {
+        setShowInactivityWarning(true);
+      } else if (remaining > 60) {
+        setShowInactivityWarning(false);
+      }
+
+      if (elapsed >= 10 * 60 * 1000) {
+        clearInterval(interval);
+        activityEvents.forEach((ev) => window.removeEventListener(ev, resetActivityTimer));
+        logoutUser();
+        alert('Tu sesión administrativa ha finalizado automáticamente por inactividad (10 minutos). Por motivos de seguridad se ha cerrado la sesión.');
+        onCloseAdmin();
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+      activityEvents.forEach((ev) => window.removeEventListener(ev, resetActivityTimer));
+    };
+  }, [onCloseAdmin]);
+
   const handleLogout = () => {
     logoutUser();
     onCloseAdmin();
+  };
+
+  const handleUnlockUser = async (uid: string, name: string) => {
+    if (window.confirm(`¿Confirmás el desbloqueo del usuario "${name}"? Se reestablecerá el contador de 5 intentos fallidos a cero.`)) {
+      await unlockAppUser(uid);
+      loadData();
+      alert(`El usuario "${name}" ha sido desbloqueado exitosamente.`);
+    }
   };
 
   // Role permissions helpers - Both Dueño General (admin) and superadmin have full access
@@ -545,6 +597,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   return (
     <div className="fixed inset-0 z-50 bg-zinc-950 text-white overflow-y-auto">
       
+      {/* 10-Minute Inactivity Warning Alert Bar */}
+      {showInactivityWarning && (
+        <div className="bg-rose-600 text-white sticky top-0 z-50 px-4 py-2.5 flex items-center justify-between shadow-2xl border-b-2 border-rose-700 animate-pulse">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-bold">
+            <Clock className="w-4 h-4 text-white shrink-0" />
+            <span>
+              AVISO DE INACTIVIDAD: Tu sesión se cerrará en{' '}
+              <strong className="font-mono text-base underline text-amber-200">{remainingInactiveSeconds}s</strong>{' '}
+              por falta de actividad.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowInactivityWarning(false);
+            }}
+            className="px-3 py-1 bg-white hover:bg-zinc-100 text-rose-700 font-black text-xs uppercase rounded-xl transition-all cursor-pointer shadow-md shrink-0"
+          >
+            Permanecer Conectado
+          </button>
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* TOP ADMIN HEADER BAR                                                      */}
       {/* ========================================================================= */}
@@ -2041,6 +2116,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                         <p className="text-[#1EB8BF] font-bold">Sucursal Asignada: {u.assignedBranchName}</p>
                       )}
                     </div>
+
+                    {/* User Lock Warning & SuperAdmin Unlock Action */}
+                    {u.isLocked && (
+                      <div className="p-3 rounded-2xl bg-rose-950/80 border-2 border-rose-500/70 flex items-center justify-between gap-2 shadow-lg">
+                        <div className="flex items-center gap-2">
+                          <AlertOctagon className="w-4 h-4 text-rose-400 shrink-0" />
+                          <div>
+                            <span className="text-xs font-black text-rose-300 uppercase block">
+                              Bloqueado ({u.failedAttempts || 5}/5 intentos)
+                            </span>
+                            <span className="text-[10px] text-zinc-300">
+                              {u.lockedReason || 'Superó 5 intentos fallidos de login'}
+                            </span>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleUnlockUser(u.uid, u.displayName)}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-black text-[11px] uppercase flex items-center gap-1.5 shadow-md cursor-pointer transition-all shrink-0"
+                          title="Desbloquear cuenta de usuario y resetear intentos fallidos a 0"
+                        >
+                          <Unlock className="w-3.5 h-3.5" />
+                          <span>Desbloquear</span>
+                        </button>
+                      </div>
+                    )}
 
                     {/* SuperAdmin Action Bar: Pause / Inhabilitar & Edit */}
                     <div className="pt-3 border-t border-zinc-800 flex items-center justify-between">
