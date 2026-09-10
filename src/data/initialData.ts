@@ -361,6 +361,11 @@ export const INITIAL_DAYCARE_DAILY_RATES: DaycareDailyOption[] = [
   { hours: 3, price: 21000 },
   { hours: 4, price: 26000 },
   { hours: 5, price: 30000 },
+  { hours: 6, price: 34000 },
+  { hours: 7, price: 38000 },
+  { hours: 8, price: 42000 },
+  { hours: 9, price: 46000 },
+  { hours: 10, price: 50000 },
 ];
 
 export const INITIAL_CALLE5_ADDITIONALS: BirthdayAdditionalPrice[] = [

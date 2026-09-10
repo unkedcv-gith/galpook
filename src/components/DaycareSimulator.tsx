@@ -165,7 +165,7 @@ export const DaycareSimulator: React.FC<DaycareSimulatorProps> = ({ embedded = f
               </span>
             </div>
             <p className="text-xs text-zinc-300 font-normal leading-relaxed pt-1">
-              Ideal para paros docentes, días puntuales sin cole, imprevistos o salidas. Contratás <strong>1 solo día por 1, 2, 3 o 4 horas</strong> sin compromiso mensual.
+              Ideal para paros docentes, días puntuales sin cole, imprevistos o salidas. Contratás <strong>1 solo día por las horas que necesites (de 1 a 10 hs)</strong> sin compromiso mensual.
             </p>
           </button>
 
@@ -228,9 +228,9 @@ export const DaycareSimulator: React.FC<DaycareSimulatorProps> = ({ embedded = f
                   </span>
                 </div>
                 
-                {/* 1, 2, 3, 4 horas por día (y 5 hs opcional) */}
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-1.5 sm:gap-2">
-                  {[1, 2, 3, 4, 5].map((h) => {
+                {/* 1 a 10 hs por día */}
+                <div className="grid grid-cols-5 sm:grid-cols-5 md:grid-cols-10 gap-1.5 sm:gap-2">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((h) => {
                     const isSelected = selectedDailyHours === h;
                     const rateForH = safeDailyRates.find((r) => r.hours === h);
                     const priceForH = rateForH ? rateForH.price : 0;
@@ -240,13 +240,13 @@ export const DaycareSimulator: React.FC<DaycareSimulatorProps> = ({ embedded = f
                         key={`daily-hour-${h}`}
                         type="button"
                         onClick={() => setSelectedDailyHours(h)}
-                        className={`p-3 rounded-xl font-heading font-black text-xs sm:text-sm uppercase transition-all flex flex-col items-center justify-center cursor-pointer ${
+                        className={`p-2 sm:p-2.5 rounded-xl font-heading font-black text-xs sm:text-sm uppercase transition-all flex flex-col items-center justify-center cursor-pointer ${
                           isSelected
                             ? 'bg-[#A3BA13] text-black font-black shadow-[0_0_15px_rgba(163,186,19,0.5)] scale-102 border-2 border-white'
                             : 'bg-zinc-900/80 hover:bg-zinc-800 text-zinc-200 border border-white/10'
                         }`}
                       >
-                        <span>{h} {h === 1 ? 'hora' : 'horas'}</span>
+                        <span>{h} hs</span>
                         <span className="text-[9px] font-normal tracking-tight opacity-90">
                           {formatCurrency(priceForH)}
                         </span>

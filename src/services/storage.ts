@@ -1559,7 +1559,10 @@ export const getPricingSettings = (): PricingSettings => {
           ? parsed.daycare.options
           : INITIAL_PRICING_SETTINGS.daycare.options,
         dailyRates: Array.isArray(parsed?.daycare?.dailyRates) && parsed.daycare.dailyRates.length > 0
-          ? parsed.daycare.dailyRates
+          ? INITIAL_PRICING_SETTINGS.daycare.dailyRates.map((defaultRate) => {
+              const found = parsed.daycare.dailyRates.find((r: DaycareDailyOption) => r.hours === defaultRate.hours);
+              return found && typeof found.price === 'number' ? found : defaultRate;
+            })
           : INITIAL_PRICING_SETTINGS.daycare.dailyRates,
       },
       birthdays: {

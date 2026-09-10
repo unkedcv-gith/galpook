@@ -442,12 +442,12 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
                   </p>
                 </div>
                 <span className="text-[11px] font-bold text-[#A3BA13] bg-black/60 px-3 py-1 rounded-lg border border-white/10 self-start sm:self-auto">
-                  1 a 4 horas (y 5 hs opcional)
+                  1 a 10 hs por día
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {[1, 2, 3, 4, 5].map((hours) => {
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((hours) => {
                   const currentRates = pricing.daycare.dailyRates && pricing.daycare.dailyRates.length > 0
                     ? pricing.daycare.dailyRates
                     : INITIAL_PRICING_SETTINGS.daycare.dailyRates;
@@ -457,11 +457,11 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
                   return (
                     <div
                       key={`daily-rate-${hours}`}
-                      className="bg-black/60 border border-white/15 rounded-xl p-4 space-y-2 hover:border-[#A3BA13]/40 transition-colors"
+                      className="bg-black/60 border border-white/15 rounded-xl p-3.5 space-y-2 hover:border-[#A3BA13]/40 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-heading font-black text-xs text-white uppercase">
-                          {hours} {hours === 1 ? 'hora en el día' : 'horas en el día'}
+                          {hours} hs
                         </span>
                         <span className="text-[11px] font-bold text-[#A3BA13]">
                           {formatCurrency(currentVal)}
