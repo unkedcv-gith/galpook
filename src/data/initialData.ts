@@ -29,8 +29,8 @@ export const BRAND_INFO = {
 };
 
 export const DEFAULT_BANK_INFO = {
-  bankName: 'Mercado Pago',
-  accountHolder: 'Romina Finocchi',
+  bankName: 'Banco de Galicia',
+  accountHolder: 'Romina Adrea Finocchi',
   cuit: '',
   cbu: '',
   alias: 'elgalpon.5',
