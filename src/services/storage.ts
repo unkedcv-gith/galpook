@@ -1,4 +1,4 @@
-import { Reservation, BlockedDate, Branch, AppUser, Inquiry, UserRole, LiabilityWaiver, PricingSettings } from '../types';
+import { Reservation, BlockedDate, Branch, AppUser, Inquiry, UserRole, LiabilityWaiver, PricingSettings, BirthdayAdditionalPrice, BirthdayMonthPrice, CalendarBlock, CalendarBlockType } from '../types';
 import { 
   INITIAL_RESERVATIONS, 
   INITIAL_BLOCKED_DATES, 
@@ -21,6 +21,7 @@ import {
 
 const RESERVATIONS_KEY = 'up_galpon_reservations_v3';
 const BLOCKED_DATES_KEY = 'up_galpon_blocked_dates_v3';
+const CALENDAR_BLOCKS_KEY = 'up_galpon_calendar_blocks_v3';
 const BRANCHES_KEY = 'up_galpon_branches_v3';
 const USERS_KEY = 'up_galpon_users_v3';
 const INQUIRIES_KEY = 'up_galpon_inquiries_v3';
@@ -91,11 +92,24 @@ export const getBranches = (): Branch[] => {
     }
     const list: Branch[] = JSON.parse(data);
     const updated = list.map((b) => {
-      if (b.whatsappNumber === '5492216105296' || b.whatsappNumber === '5492214893221' || !b.whatsappNumber) {
-        return { ...b, phone: '221 573-1047', whatsappNumber: '5492215731047' };
+      const mod = { ...b };
+      if (mod.id === 'calle-5' || mod.name.toLowerCase().includes('5')) {
+        if (mod.address.includes('58') || mod.address.includes('59') || !mod.address) {
+          mod.address = 'Calle 5 e/ 34 y 35';
+        }
       }
-      return b;
+      if (mod.id === 'calle-13' || mod.name.toLowerCase().includes('13')) {
+        if (mod.address.includes('45') || mod.address.includes('46') || !mod.address) {
+          mod.address = 'Calle 13 e/ 530 y 531';
+        }
+      }
+      if (b.whatsappNumber === '5492216105296' || b.whatsappNumber === '5492214893221' || !b.whatsappNumber) {
+        mod.phone = '221 573-1047';
+        mod.whatsappNumber = '5492215731047';
+      }
+      return mod;
     });
+    localStorage.setItem(BRANCHES_KEY, JSON.stringify(updated));
     return updated;
   } catch {
     return INITIAL_BRANCHES;
@@ -502,21 +516,25 @@ export const saveReservations = (reservations: Reservation[]): void => {
 };
 
 export const addReservation = async (
-  reservation: Omit<Reservation, 'id' | 'createdAt' | 'status' | 'depositPaid' | 'depositAmount' | 'monthKey'>
+  reservation: Omit<Reservation, 'id' | 'createdAt' | 'status' | 'depositPaid' | 'depositAmount' | 'monthKey'> & {
+    status?: Reservation['status'];
+    depositPaid?: boolean;
+    depositAmount?: number;
+  }
 ): Promise<Reservation> => {
   const current = getReservations();
   const id = `res_${Date.now().toString(36)}`;
   const monthKey = reservation.date.substring(0, 7); // YYYY-MM
 
   const newReservation: Reservation = {
-    ...reservation,
-    id,
-    monthKey,
-    createdAt: new Date().toISOString(),
     status: 'pending',
     depositPaid: false,
     depositAmount: 0,
     waiverStatus: 'pending',
+    ...reservation,
+    id,
+    monthKey,
+    createdAt: new Date().toISOString(),
   };
   const updated = [newReservation, ...current];
   saveReservations(updated);
@@ -987,24 +1005,311 @@ export const updateInquiryStatus = async (id: string, status: Inquiry['status'])
 };
 
 // -------------------------------------------------------------
-// BLOCKED DATES (BLOQUEO DE FECHAS) MANAGEMENT
+// BLOCKED DATES & CALENDAR BLOCKS (BLOQUEO DE MESES, PERÍODOS Y DÍAS)
 // -------------------------------------------------------------
-export const getBlockedDates = (branchId?: string): BlockedDate[] => {
+export const MONTH_NAMES_ES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
+
+export const expandDatesFromRange = (startDate: string, endDate: string): string[] => {
+  if (!startDate || !endDate) return [];
+  const dates: string[] = [];
+  const curr = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
+  if (isNaN(curr.getTime()) || isNaN(end.getTime()) || curr > end) {
+    return [startDate];
+  }
+  // Cap at max 400 days to prevent runaway loops
+  let guard = 0;
+  while (curr <= end && guard < 400) {
+    const y = curr.getFullYear();
+    const m = String(curr.getMonth() + 1).padStart(2, '0');
+    const d = String(curr.getDate()).padStart(2, '0');
+    dates.push(`${y}-${m}-${d}`);
+    curr.setDate(curr.getDate() + 1);
+    guard++;
+  }
+  return dates;
+};
+
+export const expandDatesFromMonth = (year: number, monthIndex: number): string[] => {
+  const dates: string[] = [];
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const m = String(monthIndex + 1).padStart(2, '0');
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayStr = String(d).padStart(2, '0');
+    dates.push(`${year}-${m}-${dayStr}`);
+  }
+  return dates;
+};
+
+export const getCalendarBlocks = (filterBranchId?: string): CalendarBlock[] => {
   try {
-    const data = localStorage.getItem(BLOCKED_DATES_KEY);
-    let list: BlockedDate[] = INITIAL_BLOCKED_DATES;
+    const data = localStorage.getItem(CALENDAR_BLOCKS_KEY);
+    let list: CalendarBlock[] = [];
     if (data) {
       list = JSON.parse(data);
     } else {
-      localStorage.setItem(BLOCKED_DATES_KEY, JSON.stringify(INITIAL_BLOCKED_DATES));
+      // Migrate from INITIAL_BLOCKED_DATES or BLOCKED_DATES_KEY if first time
+      const legacyData = localStorage.getItem(BLOCKED_DATES_KEY);
+      const legacyList = legacyData ? JSON.parse(legacyData) : INITIAL_BLOCKED_DATES;
+      list = (Array.isArray(legacyList) ? legacyList : []).map((item: any, idx: number) => ({
+        id: item.id || `block_legacy_${idx}_${Date.now().toString(36)}`,
+        type: 'single_day' as CalendarBlockType,
+        branchId: item.branchId || 'all',
+        branchName: item.branchId === 'calle-5' ? 'El Galpón Calle 5' : item.branchId === 'calle-13' ? 'El Galpón Calle 13' : 'Todas las Franquicias',
+        date: item.date,
+        reason: item.reason || 'Fecha bloqueada',
+        createdAt: new Date().toISOString(),
+      }));
+      localStorage.setItem(CALENDAR_BLOCKS_KEY, JSON.stringify(list));
     }
-    if (branchId && branchId !== 'all') {
-      return list.filter((b) => !b.branchId || b.branchId === branchId || b.branchId === 'all');
+
+    if (filterBranchId && filterBranchId !== 'all') {
+      return list.filter((b) => !b.branchId || b.branchId === filterBranchId || b.branchId === 'all');
     }
     return list;
   } catch {
-    return INITIAL_BLOCKED_DATES;
+    return [];
   }
+};
+
+export const saveCalendarBlocks = (blocks: CalendarBlock[]): void => {
+  localStorage.setItem(CALENDAR_BLOCKS_KEY, JSON.stringify(blocks));
+  // Keep legacy BLOCKED_DATES_KEY in sync with expanded dates for backward compatibility
+  try {
+    const expanded = getBlockedDates();
+    localStorage.setItem(BLOCKED_DATES_KEY, JSON.stringify(expanded));
+  } catch (e) {
+    console.warn('Sync legacy blocked dates notice:', e);
+  }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('calendarBlocksUpdate', { detail: blocks }));
+    window.dispatchEvent(new CustomEvent('storageUpdate'));
+  }
+};
+
+export const addCalendarBlock = async (
+  blockData: Omit<CalendarBlock, 'id' | 'createdAt'>
+): Promise<CalendarBlock> => {
+  const current = getCalendarBlocks();
+  const id = `block_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+  
+  let branchName = blockData.branchName;
+  if (!branchName) {
+    if (blockData.branchId === 'calle-5') branchName = 'El Galpón Calle 5';
+    else if (blockData.branchId === 'calle-13') branchName = 'El Galpón Calle 13';
+    else branchName = 'Todas las Franquicias';
+  }
+
+  let finalMonthName = blockData.monthName;
+  let finalMonthKey = blockData.monthKey;
+  if (blockData.type === 'full_month') {
+    const y = blockData.year ?? new Date().getFullYear();
+    const m = blockData.monthIndex ?? new Date().getMonth();
+    finalMonthKey = `${y}-${String(m + 1).padStart(2, '0')}`;
+    finalMonthName = `${MONTH_NAMES_ES[m]} ${y}`;
+  }
+
+  const newBlock: CalendarBlock = {
+    ...blockData,
+    id,
+    branchName,
+    monthKey: finalMonthKey,
+    monthName: finalMonthName,
+    createdAt: new Date().toISOString(),
+  };
+
+  const updated = [newBlock, ...current];
+  saveCalendarBlocks(updated);
+
+  // Sync to Firestore
+  try {
+    const blockRef = doc(db, 'calendar_blocks', id);
+    setDoc(blockRef, sanitizeForFirestore(newBlock)).catch((e) =>
+      console.warn('Firestore calendar_block set notice:', e)
+    );
+  } catch (err) {
+    console.warn('Firestore calendar_block error:', err);
+  }
+
+  return newBlock;
+};
+
+export const removeCalendarBlock = async (id: string): Promise<CalendarBlock[]> => {
+  const current = getCalendarBlocks();
+  const updated = current.filter((b) => b.id !== id);
+  saveCalendarBlocks(updated);
+
+  try {
+    const blockRef = doc(db, 'calendar_blocks', id);
+    deleteDoc(blockRef).catch((e) =>
+      console.warn('Firestore remove calendar_block notice:', e)
+    );
+  } catch (err) {
+    console.warn('Firestore remove calendar_block error:', err);
+  }
+
+  return updated;
+};
+
+export const isDateBlocked = (
+  dateStr: string, 
+  branchId?: string
+): { isBlocked: boolean; reason: string; block?: CalendarBlock } => {
+  if (!dateStr) return { isBlocked: false, reason: '' };
+  const blocks = getCalendarBlocks();
+
+  for (const block of blocks) {
+    // Check franchise matching: 'all' applies to every franchise
+    const branchMatch = 
+      !branchId || 
+      branchId === 'all' || 
+      !block.branchId || 
+      block.branchId === 'all' || 
+      block.branchId === branchId;
+    if (!branchMatch) continue;
+
+    // 1. Single Day
+    if (block.type === 'single_day') {
+      if (block.date === dateStr) {
+        return { 
+          isBlocked: true, 
+          reason: block.reason || 'Fecha bloqueada por la administración', 
+          block 
+        };
+      }
+    }
+    // 2. Date Range
+    else if (block.type === 'date_range') {
+      if (block.startDate && block.endDate && dateStr >= block.startDate && dateStr <= block.endDate) {
+        return { 
+          isBlocked: true, 
+          reason: block.reason || 'Período bloqueado por la administración', 
+          block 
+        };
+      }
+    }
+    // 3. Full Month
+    else if (block.type === 'full_month') {
+      const ym = dateStr.substring(0, 7);
+      if (block.monthKey && ym === block.monthKey) {
+        return { 
+          isBlocked: true, 
+          reason: block.reason || 'Mes bloqueado por la administración', 
+          block 
+        };
+      }
+      if (block.year !== undefined && block.monthIndex !== undefined) {
+        const [yStr, mStr] = dateStr.split('-');
+        const y = Number(yStr);
+        const m = Number(mStr);
+        if (y === block.year && m === block.monthIndex + 1) {
+          return { 
+            isBlocked: true, 
+            reason: block.reason || 'Mes bloqueado por la administración', 
+            block 
+          };
+        }
+      }
+    }
+  }
+
+  return { isBlocked: false, reason: '' };
+};
+
+export const isMonthBlocked = (
+  year: number, 
+  monthIndex: number, 
+  branchId?: string
+): { isBlocked: boolean; reason: string; block?: CalendarBlock } => {
+  const blocks = getCalendarBlocks();
+  const targetKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+
+  for (const block of blocks) {
+    const branchMatch = 
+      !branchId || 
+      branchId === 'all' || 
+      !block.branchId || 
+      block.branchId === 'all' || 
+      block.branchId === branchId;
+    if (!branchMatch) continue;
+
+    if (block.type === 'full_month') {
+      if (block.monthKey === targetKey || (block.year === year && block.monthIndex === monthIndex)) {
+        return { 
+          isBlocked: true, 
+          reason: block.reason || 'Mes completo bloqueado por la administración', 
+          block 
+        };
+      }
+    }
+  }
+
+  return { isBlocked: false, reason: '' };
+};
+
+export const getBlockedDates = (branchId?: string): BlockedDate[] => {
+  const blocks = getCalendarBlocks(branchId);
+  const result: BlockedDate[] = [];
+  const seen = new Set<string>();
+
+  for (const b of blocks) {
+    const bId = b.branchId || 'all';
+
+    if (b.type === 'single_day' && b.date) {
+      const key = `${b.date}_${bId}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push({
+          id: b.id,
+          blockId: b.id,
+          blockType: 'single_day',
+          branchId: bId,
+          date: b.date,
+          reason: b.reason,
+          createdAt: b.createdAt,
+        });
+      }
+    } else if (b.type === 'date_range' && b.startDate && b.endDate) {
+      const days = expandDatesFromRange(b.startDate, b.endDate);
+      for (const d of days) {
+        const key = `${d}_${bId}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push({
+            id: `${b.id}_${d}`,
+            blockId: b.id,
+            blockType: 'date_range',
+            branchId: bId,
+            date: d,
+            reason: b.reason,
+            createdAt: b.createdAt,
+          });
+        }
+      }
+    } else if (b.type === 'full_month' && b.year !== undefined && b.monthIndex !== undefined) {
+      const days = expandDatesFromMonth(b.year, b.monthIndex);
+      for (const d of days) {
+        const key = `${d}_${bId}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push({
+            id: `${b.id}_${d}`,
+            blockId: b.id,
+            blockType: 'full_month',
+            branchId: bId,
+            date: d,
+            reason: b.reason,
+            createdAt: b.createdAt,
+          });
+        }
+      }
+    }
+  }
+
+  return result;
 };
 
 export const toggleBlockDate = (
@@ -1012,16 +1317,21 @@ export const toggleBlockDate = (
   reason: string = 'Fecha no disponible',
   branchId: string = 'all'
 ): BlockedDate[] => {
-  const current = getBlockedDates();
-  const exists = current.some((b) => b.date === date && (!b.branchId || b.branchId === branchId));
-  let updated: BlockedDate[];
-  if (exists) {
-    updated = current.filter((b) => !(b.date === date && (!b.branchId || b.branchId === branchId)));
+  const blocks = getCalendarBlocks();
+  const existing = blocks.find((b) => 
+    b.type === 'single_day' && b.date === date && (!b.branchId || b.branchId === branchId)
+  );
+  if (existing) {
+    removeCalendarBlock(existing.id);
   } else {
-    updated = [...current, { date, reason, branchId }];
+    addCalendarBlock({
+      type: 'single_day',
+      branchId,
+      date,
+      reason,
+    });
   }
-  localStorage.setItem(BLOCKED_DATES_KEY, JSON.stringify(updated));
-  return updated;
+  return getBlockedDates(branchId);
 };
 
 // -------------------------------------------------------------
@@ -1117,6 +1427,24 @@ export const syncWithRemoteFirestore = async (): Promise<void> => {
     } catch (e) {
       console.warn('Pricing sync notice:', e);
     }
+
+    // 6. Sync Calendar Blocks (Bloqueos de Meses, Períodos y Días)
+    try {
+      const blocksSnapshot = await getDocs(collection(db, 'calendar_blocks'));
+      if (!blocksSnapshot.empty) {
+        const remoteBlocks: CalendarBlock[] = [];
+        blocksSnapshot.forEach((d) => remoteBlocks.push(d.data() as CalendarBlock));
+        if (remoteBlocks.length > 0) {
+          const localBlocks = getCalendarBlocks();
+          const blockMap = new Map<string, CalendarBlock>();
+          localBlocks.forEach((b) => blockMap.set(b.id, b));
+          remoteBlocks.forEach((b) => blockMap.set(b.id, b));
+          saveCalendarBlocks(Array.from(blockMap.values()));
+        }
+      }
+    } catch (e) {
+      console.warn('Calendar blocks sync notice:', e);
+    }
   } catch (e) {
     console.warn('Firestore sync notice (running on local storage):', e);
   }
@@ -1125,6 +1453,40 @@ export const syncWithRemoteFirestore = async (): Promise<void> => {
 // -------------------------------------------------------------
 // FIRESTORE REAL-TIME SUBSCRIPTIONS
 // -------------------------------------------------------------
+export const listenToFirestoreCalendarBlocks = (onUpdate?: (blocks: CalendarBlock[]) => void) => {
+  try {
+    const unsub = onSnapshot(
+      collection(db, 'calendar_blocks'),
+      (snapshot) => {
+        const remoteBlocks: CalendarBlock[] = [];
+        snapshot.forEach((d) => {
+          remoteBlocks.push(d.data() as CalendarBlock);
+        });
+
+        const localBlocks = getCalendarBlocks();
+        const blockMap = new Map<string, CalendarBlock>();
+        localBlocks.forEach((b) => blockMap.set(b.id, b));
+        remoteBlocks.forEach((b) => blockMap.set(b.id, b));
+
+        const merged = Array.from(blockMap.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        saveCalendarBlocks(merged);
+        if (onUpdate) onUpdate(merged);
+      },
+      (err) => {
+        if (err?.code === 'unavailable') return;
+        console.warn('Firestore onSnapshot error on calendar_blocks:', err);
+      }
+    );
+    return unsub;
+  } catch (err: any) {
+    if (err?.code !== 'unavailable') {
+      console.warn('Firestore listen calendar_blocks init notice:', err);
+    }
+    return () => {};
+  }
+};
 export const listenToFirestoreBookings = (onUpdate?: (bookings: Reservation[]) => void) => {
   try {
     const unsub = onSnapshot(
@@ -1174,6 +1536,18 @@ export const getPricingSettings = (): PricingSettings => {
       return INITIAL_PRICING_SETTINGS;
     }
     const parsed = JSON.parse(data);
+    const hasFlyerAdditionals = Array.isArray(parsed?.birthdays?.additionals) &&
+      parsed.birthdays.additionals.some((a: BirthdayAdditionalPrice) => a.id === 'calle5_add_8' || a.price === 210000);
+    const additionalsToUse = hasFlyerAdditionals
+      ? parsed.birthdays.additionals
+      : INITIAL_PRICING_SETTINGS.birthdays.additionals;
+
+    const hasFlyerMonthly = Array.isArray(parsed?.birthdays?.monthlyBasePrices) &&
+      parsed.birthdays.monthlyBasePrices.some((m: BirthdayMonthPrice) => m.basePriceCalle5 === 600000 || m.basePriceCalle13 === 550000);
+    const monthlyToUse = hasFlyerMonthly
+      ? parsed.birthdays.monthlyBasePrices
+      : INITIAL_PRICING_SETTINGS.birthdays.monthlyBasePrices;
+
     return {
       fitness: {
         onceAWeek: typeof parsed?.fitness?.onceAWeek === 'number' ? parsed.fitness.onceAWeek : INITIAL_PRICING_SETTINGS.fitness.onceAWeek,
@@ -1183,17 +1557,16 @@ export const getPricingSettings = (): PricingSettings => {
         options: Array.isArray(parsed?.daycare?.options) && parsed.daycare.options.length > 0
           ? parsed.daycare.options
           : INITIAL_PRICING_SETTINGS.daycare.options,
+        dailyRates: Array.isArray(parsed?.daycare?.dailyRates) && parsed.daycare.dailyRates.length > 0
+          ? parsed.daycare.dailyRates
+          : INITIAL_PRICING_SETTINGS.daycare.dailyRates,
       },
       birthdays: {
         depositAmount: typeof parsed?.birthdays?.depositAmount === 'number'
           ? parsed.birthdays.depositAmount
           : INITIAL_PRICING_SETTINGS.birthdays.depositAmount,
-        monthlyBasePrices: Array.isArray(parsed?.birthdays?.monthlyBasePrices) && parsed.birthdays.monthlyBasePrices.length > 0
-          ? parsed.birthdays.monthlyBasePrices
-          : INITIAL_PRICING_SETTINGS.birthdays.monthlyBasePrices,
-        additionals: Array.isArray(parsed?.birthdays?.additionals) && parsed.birthdays.additionals.length > 0
-          ? parsed.birthdays.additionals
-          : INITIAL_PRICING_SETTINGS.birthdays.additionals,
+        monthlyBasePrices: monthlyToUse,
+        additionals: additionalsToUse,
       },
       updatedAt: parsed?.updatedAt || new Date().toISOString(),
     };

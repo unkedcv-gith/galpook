@@ -100,6 +100,10 @@ export interface Reservation {
   waiverStatus?: 'pending' | 'signed';
   liabilityWaiver?: LiabilityWaiver;
 
+  // Terms, conditions and deposit approval toggle
+  termsAndDepositApproved?: boolean;
+  termsApprovedAt?: string;
+
   // 40-minute expiration after sending terms and conditions
   termsSentAt?: string; // ISO timestamp when terms and conditions were sent
   termsOpenedAt?: string; // ISO timestamp when user entered the waiver form
@@ -125,11 +129,39 @@ export interface TimeSlot {
   description: string;
 }
 
+export type CalendarBlockType = 'single_day' | 'date_range' | 'full_month';
+
+export interface CalendarBlock {
+  id: string;
+  type: CalendarBlockType;
+  branchId: string; // specific branch ID or 'all' (bloqueo general)
+  branchName?: string; // "Todas las Franquicias" or branch name
+  reason: string;
+  createdAt: string;
+  createdBy?: string;
+
+  // For single_day
+  date?: string; // YYYY-MM-DD
+
+  // For date_range
+  startDate?: string; // YYYY-MM-DD
+  endDate?: string; // YYYY-MM-DD
+
+  // For full_month
+  year?: number;
+  monthIndex?: number; // 0 to 11 (0 = Enero, 11 = Diciembre)
+  monthKey?: string; // YYYY-MM (e.g. "2027-01")
+  monthName?: string; // e.g. "Enero 2027"
+}
+
 export interface BlockedDate {
   id?: string;
+  blockId?: string;
+  blockType?: CalendarBlockType;
   branchId?: string; // specific to branch or 'all'
   date: string; // YYYY-MM-DD
   reason: string;
+  createdAt?: string;
 }
 
 export interface FaqItem {
@@ -179,17 +211,30 @@ export interface DaycarePricingOption {
   price: number; // e.g. 90000
 }
 
+export interface DaycareDailyOption {
+  hours: number; // 1 to 5
+  price: number; // e.g. 9500
+}
+
 export interface BirthdayMonthPrice {
   monthIndex: number; // 0 to 11 (0 = Enero, 8 = Septiembre, etc.)
   monthName: string;
   basePrice: number;
+  basePriceCalle5?: number;
+  basePriceCalle13?: number;
+  additionalsCalle5?: BirthdayAdditionalPrice[];
+  additionalsCalle13?: BirthdayAdditionalPrice[];
+  additionals?: BirthdayAdditionalPrice[];
 }
 
 export interface BirthdayAdditionalPrice {
   id: string;
   name: string;
+  badge?: string;
   description: string;
   price: number;
+  branchId?: string; // 'calle-5' | 'calle-13' | 'all'
+  isMaxChicos?: boolean;
 }
 
 export interface PricingSettings {
@@ -199,6 +244,7 @@ export interface PricingSettings {
   };
   daycare: {
     options: DaycarePricingOption[];
+    dailyRates: DaycareDailyOption[];
   };
   birthdays: {
     depositAmount: number;

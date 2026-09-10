@@ -63,6 +63,7 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
   const [status, setStatus] = useState<Reservation['status']>('pending');
   const [depositPaid, setDepositPaid] = useState(false);
   const [depositAmount, setDepositAmount] = useState<number>(getPricingSettings().birthdays.depositAmount);
+  const [termsAndDepositApproved, setTermsAndDepositApproved] = useState(false);
   const [notes, setNotes] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -84,6 +85,10 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
       setStatus(reservation.status || 'pending');
       setDepositPaid(reservation.depositPaid ?? false);
       setDepositAmount(reservation.depositAmount || getPricingSettings().birthdays.depositAmount);
+      setTermsAndDepositApproved(Boolean(
+        reservation.termsAndDepositApproved ||
+        (reservation.status === 'approved' && reservation.depositPaid)
+      ));
       setNotes(reservation.notes || '');
       setSaveSuccess(false);
     }
@@ -121,6 +126,9 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
     setIsSaving(true);
 
     try {
+      const finalStatus = termsAndDepositApproved ? 'approved' : status;
+      const finalDepositPaid = termsAndDepositApproved ? true : depositPaid;
+
       const updatedFields: Partial<Reservation> = {
         date,
         slotId,
@@ -133,10 +141,13 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
         parentPhone,
         parentEmail,
         estimatedKids: Number(estimatedKids) || 20,
-        additionalPackage,
-        status,
-        depositPaid,
+        additionalPackage: additionalPackage as any,
+        status: finalStatus,
+        depositPaid: finalDepositPaid,
         depositAmount: Number(depositAmount) || 100000,
+        termsAndDepositApproved,
+        termsApprovedAt: termsAndDepositApproved ? (reservation.termsApprovedAt || new Date().toISOString()) : undefined,
+        waiverStatus: termsAndDepositApproved ? 'signed' : reservation.waiverStatus,
         notes,
       };
 
@@ -194,14 +205,37 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="space-y-1">
-                <label className="font-bold text-zinc-300 uppercase text-[10px]">Fecha del Evento *</label>
-                <input
-                  type="date"
-                  required
-                  value={date}
-                  onChange={(e) => handleDateChange(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:border-[#1EB8BF] focus:outline-none"
-                />
+                <label className="font-bold text-zinc-300 uppercase text-[10px] flex items-center justify-between">
+                  <span>Fecha del Evento *</span>
+                  <span className="text-amber-400 text-[9px] lowercase font-normal flex items-center gap-0.5">
+                    <CalendarIcon className="w-2.5 h-2.5" /> clic en almanaque
+                  </span>
+                </label>
+                <div className="relative flex items-center">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      const input = e.currentTarget.parentElement?.querySelector('input');
+                      if (input && 'showPicker' in input) {
+                        (input as any).showPicker();
+                      } else {
+                        input?.focus();
+                      }
+                    }}
+                    className="absolute left-3 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer z-10 flex items-center justify-center p-0.5 rounded"
+                    title="Hacer clic para abrir el almanaque y seleccionar fecha"
+                  >
+                    <CalendarIcon className="w-4 h-4 text-amber-400" />
+                  </button>
+                  <input
+                    type="date"
+                    required
+                    value={date}
+                    style={{ colorScheme: 'dark' }}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="w-full bg-zinc-900 border-2 border-zinc-700 hover:border-amber-400 focus:border-[#1EB8BF] rounded-xl pl-9 pr-3 py-2 text-white text-xs focus:outline-none cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:brightness-150 [&::-webkit-calendar-picker-indicator]:scale-125 transition-colors"
+                  />
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -220,15 +254,24 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
               </div>
 
               <div className="space-y-1">
-                <label className="font-bold text-zinc-300 uppercase text-[10px]">Sucursal *</label>
+                <label className="font-bold text-zinc-300 uppercase text-[10px] flex items-center justify-between">
+                  <span>Sucursal *</span>
+                  <span className={`text-[9px] font-black uppercase px-1.5 py-0.2 rounded border ${
+                    branchId === 'calle-5' ? 'text-[#ED3078] border-[#ED3078]/40 bg-[#ED3078]/10' : 'text-[#1EB8BF] border-[#1EB8BF]/40 bg-[#1EB8BF]/10'
+                  }`}>
+                    {branchId === 'calle-5' ? 'Sede Rosa' : 'Sede Cyan'}
+                  </span>
+                </label>
                 <select
                   value={branchId}
                   onChange={(e) => handleBranchChange(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-2 text-white focus:border-[#1EB8BF] focus:outline-none"
+                  className={`w-full bg-zinc-900 border rounded-xl px-3 py-2 text-white focus:outline-none ${
+                    branchId === 'calle-5' ? 'border-[#ED3078]/60 focus:border-[#ED3078]' : 'border-[#1EB8BF]/60 focus:border-[#1EB8BF]'
+                  }`}
                 >
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
-                      {b.name}
+                      {b.name} ({b.id === 'calle-5' ? 'Rosa' : 'Cyan'})
                     </option>
                   ))}
                 </select>
@@ -341,6 +384,45 @@ export const EditReservationModal: React.FC<EditReservationModalProps> = ({
             <div className="flex items-center gap-2 text-zinc-300 font-bold text-[11px] uppercase border-b border-zinc-800 pb-2">
               <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
               <span>Estado de la Reserva y Seña</span>
+            </div>
+
+            {/* CHECKBOX DESTACADO: Términos, condiciones y seña aprobados */}
+            <div className={`p-3.5 rounded-2xl border-2 transition-all ${
+              termsAndDepositApproved
+                ? 'bg-emerald-950/70 border-emerald-500 text-white shadow-lg shadow-emerald-950/40'
+                : 'bg-zinc-900/90 border-zinc-700 hover:border-zinc-500 text-zinc-300'
+            }`}>
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={termsAndDepositApproved}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setTermsAndDepositApproved(checked);
+                    if (checked) {
+                      setStatus('approved');
+                      setDepositPaid(true);
+                    }
+                  }}
+                  className="w-5 h-5 rounded mt-0.5 border-zinc-600 bg-black text-emerald-500 focus:ring-0 cursor-pointer accent-emerald-500 shrink-0"
+                />
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-heading font-black text-sm text-white uppercase tracking-wide flex items-center gap-1.5">
+                      <CheckCircle2 className={`w-4 h-4 ${termsAndDepositApproved ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                      Términos, condiciones y seña aprobados
+                    </span>
+                    {termsAndDepositApproved && (
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-black text-[10px] font-black uppercase">
+                        Aprobado
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-zinc-400 leading-tight">
+                    Al tildar este casillero, la reserva queda confirmada y con la seña acreditada, reflejándose de inmediato en la tarjeta de reserva del panel.
+                  </p>
+                </div>
+              </label>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

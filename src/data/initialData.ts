@@ -9,6 +9,7 @@ import {
   Inquiry,
   PricingSettings,
   DaycarePricingOption,
+  DaycareDailyOption,
   BirthdayMonthPrice,
   BirthdayAdditionalPrice
 } from '../types';
@@ -19,9 +20,11 @@ export const BRAND_INFO = {
   subtitle: 'Nuestras actividades pensadas con un propósito: entretenimiento sano.',
   phone: '221 573-1047',
   whatsappUrl: 'https://wa.me/5492215731047',
+  instagramMain: '@elgalponlaplata',
+  instagramMainUrl: 'https://instagram.com/elgalponlaplata',
   instagram: '@up.deportivoyrecreativo',
   instagramUrl: 'https://instagram.com/up.deportivoyrecreativo',
-  hours: 'Lunes a Viernes de 7:30 a 17:00 hs (Talleres) | Sábados y Domingos (Cumpleaños)',
+  hours: 'Lunes a Viernes de 7:30 a 17:00 hs (Talleres) | Turnos de 2:30hs, Todos los días! (Cumpleaños)',
   address: 'El Galpón - Espacio Recreativo Deportivo',
 };
 
@@ -39,7 +42,7 @@ export const INITIAL_BRANCHES: Branch[] = [
   {
     id: 'calle-5',
     name: 'El Galpón Calle 5',
-    address: 'Calle 5 e/ 58 y 59 Nº 1234',
+    address: 'Calle 5 e/ 34 y 35',
     city: 'La Plata',
     phone: '221 573-1047',
     whatsappNumber: '5492215731047',
@@ -53,7 +56,7 @@ export const INITIAL_BRANCHES: Branch[] = [
   {
     id: 'calle-13',
     name: 'El Galpón Calle 13',
-    address: 'Calle 13 e/ 45 y 46 Nº 567',
+    address: 'Calle 13 e/ 530 y 531',
     city: 'La Plata',
     phone: '221 573-1047',
     whatsappNumber: '5492215731047',
@@ -352,46 +355,88 @@ export const INITIAL_DAYCARE_OPTIONS: DaycarePricingOption[] = [
   { days: 1, hours: 5, price: 90000 },
 ];
 
-export const INITIAL_BIRTHDAY_MONTHS: BirthdayMonthPrice[] = [
-  { monthIndex: 0, monthName: 'Enero', basePrice: 420000 },
-  { monthIndex: 1, monthName: 'Febrero', basePrice: 420000 },
-  { monthIndex: 2, monthName: 'Marzo', basePrice: 440000 },
-  { monthIndex: 3, monthName: 'Abril', basePrice: 440000 },
-  { monthIndex: 4, monthName: 'Mayo', basePrice: 460000 },
-  { monthIndex: 5, monthName: 'Junio', basePrice: 460000 },
-  { monthIndex: 6, monthName: 'Julio', basePrice: 480000 },
-  { monthIndex: 7, monthName: 'Agosto', basePrice: 480000 },
-  { monthIndex: 8, monthName: 'Septiembre', basePrice: 500000 },
-  { monthIndex: 9, monthName: 'Octubre', basePrice: 520000 },
-  { monthIndex: 10, monthName: 'Noviembre', basePrice: 540000 },
-  { monthIndex: 11, monthName: 'Diciembre', basePrice: 560000 },
+export const INITIAL_DAYCARE_DAILY_RATES: DaycareDailyOption[] = [
+  { hours: 1, price: 9500 },
+  { hours: 2, price: 16000 },
+  { hours: 3, price: 21000 },
+  { hours: 4, price: 26000 },
+  { hours: 5, price: 30000 },
+];
+
+export const INITIAL_CALLE5_ADDITIONALS: BirthdayAdditionalPrice[] = [
+  {
+    id: 'calle5_add_8',
+    name: '+8 CHICOS',
+    badge: 'NENE 21 AL 28',
+    description: 'Para recibir del nene 21 al 28. Incluye más personal y comida.',
+    price: 210000,
+    branchId: 'calle-5',
+  },
+  {
+    id: 'calle5_add_15',
+    name: '+15 CHICOS',
+    badge: 'NENE 29 AL 35',
+    description: 'Para recibir del nene 29 al 35. Incluye más personal y comida.',
+    price: 275000,
+    branchId: 'calle-5',
+  },
+  {
+    id: 'calle5_add_20',
+    name: '+20 CHICOS',
+    badge: 'NENE 36 AL 40 • MÁXIMO',
+    description: 'Para recibir del nene 36 al 40. Máximo de nenes permitido en Calle 5.',
+    price: 335000,
+    branchId: 'calle-5',
+    isMaxChicos: true,
+  },
+  {
+    id: 'calle5_add_10_adultos',
+    name: '+10 ADULTOS',
+    badge: 'ADULTO 21 AL 30',
+    description: 'Para recibir del adulto 21 al 30. Incluye mozo, vajilla y pizza/empanadas extra.',
+    price: 150000,
+    branchId: 'calle-5',
+  },
+];
+
+export const INITIAL_CALLE13_ADDITIONALS: BirthdayAdditionalPrice[] = [
+  {
+    id: 'calle13_add_8',
+    name: '+8 CHICOS',
+    badge: 'NENE 21 AL 28',
+    description: 'Para recibir del nene 21 al 28. Incluye más personal y comida.',
+    price: 210000,
+    branchId: 'calle-13',
+  },
+  {
+    id: 'calle13_add_15',
+    name: '+15 CHICOS',
+    badge: 'NENE 29 AL 35 • MÁXIMO',
+    description: 'Para recibir del nene 29 al 35. Máximo de nenes permitido en Calle 13.',
+    price: 275000,
+    branchId: 'calle-13',
+    isMaxChicos: true,
+  },
 ];
 
 export const INITIAL_BIRTHDAY_ADDITIONALS: BirthdayAdditionalPrice[] = [
-  {
-    id: 'adicional_21_28',
-    name: 'Adicional 1 (Chicos 21 al 28)',
-    description: 'Hasta 28 chicos. Incluye refuerzo de profesores y menú infantil.',
-    price: 50000,
-  },
-  {
-    id: 'adicional_29_35',
-    name: 'Adicional 2 (Chicos 29 al 35)',
-    description: 'Hasta 35 chicos. Incluye coordinación extra, monitores y catering completo.',
-    price: 60000,
-  },
-  {
-    id: 'adicional_calle5_36_40',
-    name: '3er Adicional Calle 5 (Chicos 36 al 40)',
-    description: 'Exclusivo El Galpón Calle 5 para salones ampliados hasta 40 chicos.',
-    price: 45000,
-  },
-  {
-    id: 'adicional_adultos_extra',
-    name: 'Adicional Adultos (+ de 20 adultos)',
-    description: 'Servicio de vajilla, camarero de apoyo y coordinación para adultos.',
-    price: 35000,
-  },
+  ...INITIAL_CALLE5_ADDITIONALS,
+  ...INITIAL_CALLE13_ADDITIONALS,
+];
+
+export const INITIAL_BIRTHDAY_MONTHS: BirthdayMonthPrice[] = [
+  { monthIndex: 0, monthName: 'Enero', basePrice: 500000, basePriceCalle5: 520000, basePriceCalle13: 480000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 1, monthName: 'Febrero', basePrice: 500000, basePriceCalle5: 520000, basePriceCalle13: 480000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 2, monthName: 'Marzo', basePrice: 520000, basePriceCalle5: 540000, basePriceCalle13: 500000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 3, monthName: 'Abril', basePrice: 520000, basePriceCalle5: 540000, basePriceCalle13: 500000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 4, monthName: 'Mayo', basePrice: 550000, basePriceCalle5: 570000, basePriceCalle13: 520000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 5, monthName: 'Junio', basePrice: 550000, basePriceCalle5: 570000, basePriceCalle13: 520000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 6, monthName: 'Julio', basePrice: 580000, basePriceCalle5: 600000, basePriceCalle13: 550000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 7, monthName: 'Agosto', basePrice: 580000, basePriceCalle5: 600000, basePriceCalle13: 550000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 8, monthName: 'Septiembre', basePrice: 600000, basePriceCalle5: 600000, basePriceCalle13: 550000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 9, monthName: 'Octubre', basePrice: 620000, basePriceCalle5: 620000, basePriceCalle13: 570000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 10, monthName: 'Noviembre', basePrice: 640000, basePriceCalle5: 640000, basePriceCalle13: 590000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
+  { monthIndex: 11, monthName: 'Diciembre', basePrice: 660000, basePriceCalle5: 660000, basePriceCalle13: 610000, additionalsCalle5: INITIAL_CALLE5_ADDITIONALS, additionalsCalle13: INITIAL_CALLE13_ADDITIONALS },
 ];
 
 export const INITIAL_PRICING_SETTINGS: PricingSettings = {
@@ -401,6 +446,7 @@ export const INITIAL_PRICING_SETTINGS: PricingSettings = {
   },
   daycare: {
     options: INITIAL_DAYCARE_OPTIONS,
+    dailyRates: INITIAL_DAYCARE_DAILY_RATES,
   },
   birthdays: {
     depositAmount: 100000,

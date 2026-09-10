@@ -18,22 +18,34 @@ export const ContactFooter: React.FC<ContactFooterProps> = ({
     <footer className="py-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white text-sm">
       <div className="bg-black/60 backdrop-blur-md rounded-3xl border-2 border-[#1EB8BF] p-6 sm:p-10 shadow-[6px_6px_0px_0px_#1EB8BF] space-y-8">
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
           
-          {/* Col 1: Brand */}
-          <div className="space-y-3">
+          {/* Col 1: Brand & Reserva */}
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
               <img src={logoBlanca} alt="El Galpón" className="h-12 w-auto max-w-[200px] object-contain" />
             </div>
 
             <p className="text-xs text-zinc-300 leading-relaxed font-medium">
-              {BRAND_INFO.tagline}. Un espacio creado para que los chicos jueguen, se ejerciten y se diviertan sanamente en cumpleaños y talleres.
+              <strong className="text-white block font-bold mb-1">{BRAND_INFO.tagline}.</strong>
+              Un espacio creado para que los chicos jueguen, se ejerciten y se diviertan sanamente en cumpleaños y talleres recreativos.
             </p>
+
+            <div>
+              <button
+                type="button"
+                onClick={onOpenBooking}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#1EB8BF] to-[#ED3078] text-white font-heading font-black text-xs uppercase tracking-wider hover:brightness-110 transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                <Calendar className="w-4 h-4" />
+                <span>Reservar Turno Online</span>
+              </button>
+            </div>
           </div>
 
-          {/* Col 2: Contact Info */}
-          <div className="space-y-3">
-            <h4 className="font-heading font-black text-white text-base uppercase">Contacto & Redes</h4>
+          {/* Col 2: Contacto, Redes & Sedes */}
+          <div className="space-y-3.5">
+            <h4 className="font-heading font-black text-white text-base uppercase tracking-wide">Contacto & Sedes</h4>
             
             <a
               href={BRAND_INFO.whatsappUrl}
@@ -41,59 +53,72 @@ export const ContactFooter: React.FC<ContactFooterProps> = ({
               rel="noopener noreferrer"
               className="flex items-center gap-2.5 text-xs text-[#A3BA13] font-black hover:underline transition-colors"
             >
-              <MessageCircle className="w-4 h-4 text-[#A3BA13]" />
+              <MessageCircle className="w-4 h-4 text-[#A3BA13] shrink-0" />
               <span>WhatsApp: {BRAND_INFO.phone}</span>
             </a>
 
-            <a
-              href={BRAND_INFO.instagramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2.5 text-xs text-[#ED3078] font-black hover:underline transition-colors"
-            >
-              <Instagram className="w-4 h-4 text-[#ED3078]" />
-              <span>Instagram: {BRAND_INFO.instagram}</span>
-            </a>
+            <div className="space-y-1.5 pt-0.5">
+              <a
+                href={BRAND_INFO.instagramMainUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 text-xs text-[#F2C700] font-black hover:underline transition-colors"
+              >
+                <Instagram className="w-4 h-4 text-[#F2C700] shrink-0" />
+                <span>Instagram: {BRAND_INFO.instagramMain}</span>
+              </a>
 
-            <div className="flex items-center gap-2.5 text-xs text-zinc-300 font-medium">
-              <MapPin className="w-4 h-4 text-[#F2C700] shrink-0" />
-              <span>{BRAND_INFO.address}</span>
+              <a
+                href={BRAND_INFO.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 text-xs text-[#ED3078] font-black hover:underline transition-colors"
+              >
+                <Instagram className="w-4 h-4 text-[#ED3078] shrink-0" />
+                <span>Espacio UP: {BRAND_INFO.instagram}</span>
+              </a>
+            </div>
+
+            <div className="pt-2 border-t border-white/10 space-y-1.5">
+              <div className="flex items-center gap-2 text-xs text-zinc-300 font-medium">
+                <MapPin className="w-4 h-4 text-[#ED3078] shrink-0" />
+                <span><strong>Sede Calle 5:</strong> Calle 5 e/ 34 y 35</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-zinc-300 font-medium">
+                <MapPin className="w-4 h-4 text-[#1EB8BF] shrink-0" />
+                <span><strong>Sede Calle 13:</strong> Calle 13 e/ 530 y 531</span>
+              </div>
             </div>
           </div>
 
-          {/* Col 3: Horarios */}
-          <div className="space-y-3">
-            <h4 className="font-heading font-black text-white text-base uppercase">Horarios de Atención</h4>
+          {/* Col 3: Horarios & Actividades */}
+          <div className="space-y-3.5">
+            <h4 className="font-heading font-black text-white text-base uppercase tracking-wide">Horarios de Atención</h4>
             
-            <div className="flex items-start gap-2 text-xs text-zinc-300 leading-relaxed font-medium">
+            <div className="flex items-start gap-2.5 text-xs text-zinc-300 leading-relaxed font-medium">
+              <Clock className="w-4 h-4 text-[#ED3078] shrink-0 mt-0.5" />
+              <div>
+                <strong className="text-white block font-bold">Cumpleaños Infantiles:</strong>
+                Turnos de 2:30 hs • Todos los días (Lunes a Domingos y Feriados).
+              </div>
+            </div>
+
+            <div className="flex items-start gap-2.5 text-xs text-zinc-300 leading-relaxed font-medium">
               <Clock className="w-4 h-4 text-[#1EB8BF] shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white block">Talleres y Cuidado:</strong>
+                <strong className="text-white block font-bold">Espacio UP (Cuidado y Talleres):</strong>
                 Lunes a Viernes de 7:30 a 17:00 hs.
               </div>
             </div>
 
-            <div className="flex items-start gap-2 text-xs text-zinc-300 leading-relaxed font-medium">
-              <Clock className="w-4 h-4 text-[#ED3078] shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 text-xs text-zinc-300 leading-relaxed font-medium">
+              <Clock className="w-4 h-4 text-[#A3BA13] shrink-0 mt-0.5" />
               <div>
-                <strong className="text-white block">Cumpleaños Infantiles:</strong>
-                Sábados y Domingos en turnos de 2:30 hs.
+                <strong className="text-white block font-bold">Fitness Infantil & Juvenil:</strong>
+                <span className="block">• Pekes en Acción: Martes y Jueves 17:30 a 18:30 hs.</span>
+                <span className="block">• Crossteens: Martes y Jueves 18:30 a 19:30 hs.</span>
               </div>
             </div>
-          </div>
-
-          {/* Col 4: Links */}
-          <div className="space-y-3">
-            <h4 className="font-heading font-black text-white text-base uppercase">Accesos Rápidos</h4>
-            
-            <ul className="space-y-2.5 text-xs font-black">
-              <li>
-                <button onClick={onOpenBooking} className="hover:text-[#1EB8BF] transition-colors flex items-center gap-1.5 text-zinc-200 uppercase cursor-pointer">
-                  <Calendar className="w-3.5 h-3.5 text-[#1EB8BF]" />
-                  <span>Reservar Turno de Cumpleaños</span>
-                </button>
-              </li>
-            </ul>
           </div>
 
         </div>

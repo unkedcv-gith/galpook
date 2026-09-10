@@ -49,28 +49,43 @@ export const BranchComparisonModal: React.FC<BranchComparisonModalProps> = ({ is
               </thead>
               <tbody className="text-sm font-bold text-white uppercase tracking-wide">
                 {[
-                  { name: 'Muro y Tirolesa', c5: true, c13: true },
-                  { name: 'Aro y Tela de Acrobacia', c5: true, c13: true },
+                  { name: 'Superficie del Salón', c5Text: '667 m²', c13Text: '560 m²' },
+                  { name: 'Dirección Exacta', c5Text: '5 e/ 34 y 35', c13Text: '13 e/ 530 y 531' },
+                  { name: 'Tarifa Base (Septiembre)', c5Text: '$600.000', c13Text: '$550.000' },
+                  { name: 'Muro de Escalada y Tirolesa', c5: true, c13: true },
+                  { name: 'Aro de Acrobacia y Tela', c5: true, c13: true },
+                  { name: 'Camas Elásticas', c5: true, c13: false },
+                  { name: 'Reloj Loco!! (Atracción Estrella)', c5: true, c13: false },
+                  { name: 'Cancha de Básquet', c5: false, c13: true },
                   { name: 'Circuitos Deportivos', c5: true, c13: true },
                   { name: 'Videojuegos', c5: true, c13: true },
-                  { name: 'Reloj Loco', c5: true, c13: false },
-                  { name: 'Camas Elásticas', c5: true, c13: false },
-                  { name: 'Sector Menores de 4 Años', c5: true, c13: false },
-                  { name: 'Comida Adultos', c5: true, c13: true },
-                  { name: 'Comida y Bebida Chicos', c5: true, c13: true },
-                  { name: 'Encargado y Mozo', c5: true, c13: true },
-                  { name: 'Vajilla', c5: true, c13: true },
+                  { name: 'Plaza Blanda (Menores de 5 años)', c5: true, c13: false },
+                  { name: 'Personal de Cocina y Mozo', c5: true, c13: true },
+                  { name: 'Menú Chicos y Adultos de Regalo', c5: true, c13: true },
+                  { name: 'Tarjeta Virtual Personalizada', c5: true, c13: true },
                   { name: 'Seguro y Asistencia Médica', c5: true, c13: true },
                   { name: 'WIFI', c5: true, c13: true },
-                  { name: 'Grupo Electrógeno', c5: true, c13: true },
+                  { name: 'Grupo Electrógeno', c5: true, c13: false },
                 ].map((row, i) => (
                   <tr key={i} className="border-b border-white/10 hover:bg-white/5 transition-colors">
                     <td className="p-4">{row.name}</td>
                     <td className="p-4 text-center">
-                      {row.c5 ? <CheckCircle2 className="w-6 h-6 text-[#ED3078] mx-auto" /> : <XCircle className="w-6 h-6 text-zinc-600 mx-auto" />}
+                      {row.c5Text ? (
+                        <span className="font-heading font-black text-sm text-[#ED3078]">{row.c5Text}</span>
+                      ) : row.c5 ? (
+                        <CheckCircle2 className="w-6 h-6 text-[#ED3078] mx-auto" />
+                      ) : (
+                        <XCircle className="w-6 h-6 text-zinc-600 mx-auto" />
+                      )}
                     </td>
                     <td className="p-4 text-center">
-                      {row.c13 ? <CheckCircle2 className="w-6 h-6 text-[#1EB8BF] mx-auto" /> : <XCircle className="w-6 h-6 text-zinc-600 mx-auto" />}
+                      {row.c13Text ? (
+                        <span className="font-heading font-black text-sm text-[#1EB8BF]">{row.c13Text}</span>
+                      ) : row.c13 ? (
+                        <CheckCircle2 className="w-6 h-6 text-[#1EB8BF] mx-auto" />
+                      ) : (
+                        <XCircle className="w-6 h-6 text-zinc-600 mx-auto" />
+                      )}
                     </td>
                   </tr>
                 ))}

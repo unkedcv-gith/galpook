@@ -11,7 +11,9 @@ import {
   getPricingSettings,
   formatCurrency,
   listenToPricingSettings,
-  isReservationExpired
+  isReservationExpired,
+  getCurrentUser,
+  toggleBlockDate
 } from '../services/storage';
 import { 
   Calendar as CalendarIcon, 
@@ -35,6 +37,7 @@ import {
   Tag,
   DollarSign
 } from 'lucide-react';
+import { BranchComparisonModal } from './BranchComparisonModal';
 
 interface BookingCalendarProps {
   isOpenModal?: boolean;
@@ -82,6 +85,8 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const [submittedReservation, setSubmittedReservation] = useState<Reservation | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPricingDetailsMobile, setShowPricingDetailsMobile] = useState(false);
+  const [showInclusionsDetails, setShowInclusionsDetails] = useState(false);
+  const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
   // Load active branches
   useEffect(() => {
@@ -111,11 +116,13 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [allBlockedDates, setAllBlockedDates] = useState<ReturnType<typeof getBlockedDates>>([]);
   const [pricing, setPricing] = useState<PricingSettings>(getPricingSettings);
+  const [currentUser, setCurrentUser] = useState(getCurrentUser());
 
   const loadData = () => {
     setAllReservations(getReservations());
     setAllBlockedDates(getBlockedDates());
     setPricing(getPricingSettings());
+    setCurrentUser(getCurrentUser());
   };
 
   useEffect(() => {
@@ -345,7 +352,11 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
             </div>
 
             <div className="space-y-2">
-              <span className="inline-block px-3 py-1 bg-[#1EB8BF]/20 text-[#1EB8BF] border border-[#1EB8BF] rounded-full text-xs font-black uppercase">
+              <span className={`inline-block px-3.5 py-1 rounded-full text-xs font-black uppercase ${
+                submittedReservation.branchId === 'calle-5'
+                  ? 'bg-[#ED3078]/20 text-[#ED3078] border-2 border-[#ED3078]'
+                  : 'bg-[#1EB8BF]/20 text-[#1EB8BF] border-2 border-[#1EB8BF]'
+              }`}>
                 {submittedReservation.branchName}
               </span>
               <h3 className="font-heading text-2xl sm:text-3xl font-black text-white uppercase">
@@ -361,7 +372,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
               <div className="flex justify-between border-b border-zinc-800 pb-2">
                 <span className="text-zinc-400 font-bold uppercase">Sucursal:</span>
                 <span className="text-white font-extrabold flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-[#1EB8BF]" /> {submittedReservation.branchName}
+                  <MapPin className={`w-3.5 h-3.5 ${submittedReservation.branchId === 'calle-5' ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} /> {submittedReservation.branchName}
                 </span>
               </div>
               <div className="flex justify-between border-b border-zinc-800 pb-2">
@@ -414,7 +425,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
             <div className="bg-black/80 backdrop-blur-md rounded-3xl border-2 border-white/20 p-5 sm:p-8 space-y-4 shadow-xl">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-[#1EB8BF] text-black font-black text-sm flex items-center justify-center shrink-0">
+                  <div className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center shrink-0 transition-colors ${
+                    selectedBranchId === 'calle-5' ? 'bg-[#ED3078] text-white shadow-[0_0_12px_rgba(237,48,120,0.5)]' : 'bg-[#1EB8BF] text-black shadow-[0_0_12px_rgba(30,184,191,0.5)]'
+                  }`}>
                     1
                   </div>
                   <div>
@@ -422,23 +435,41 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       Paso 1: Seleccioná la Sucursal
                     </h3>
                     <p className="text-xs text-zinc-300 font-medium">
-                      Elige el local donde deseas celebrar el cumpleaños infantil
+                      Elegí el local donde deseas celebrar el cumpleaños infantil
                     </p>
                   </div>
                 </div>
 
-                {selectedBranch && (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 rounded-full text-xs font-bold text-zinc-300 self-start sm:self-auto">
-                    <MapPin className="w-3.5 h-3.5 text-[#1EB8BF]" />
-                    <span>Sucursal seleccionada: <strong className="text-white">{selectedBranch.name}</strong></span>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedBranch && (
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold self-start sm:self-auto transition-colors ${
+                      selectedBranchId === 'calle-5'
+                        ? 'bg-[#ED3078]/20 border border-[#ED3078] text-[#ED3078]'
+                        : 'bg-[#1EB8BF]/20 border border-[#1EB8BF] text-[#1EB8BF]'
+                    }`}>
+                      <MapPin className={`w-3.5 h-3.5 ${selectedBranchId === 'calle-5' ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                      <span>Sucursal elegida: <strong className="text-white">{selectedBranch.name}</strong></span>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setIsComparisonOpen(true)}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-zinc-900/90 hover:bg-zinc-800 text-xs font-bold rounded-full border border-white/20 transition-all cursor-pointer"
+                  >
+                    <span className="text-[#ED3078] font-black">Calle 5</span>
+                    <span className="text-zinc-400">vs</span>
+                    <span className="text-[#1EB8BF] font-black">Calle 13</span>
+                  </button>
+                </div>
               </div>
 
               {/* Branch Selector Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 pt-1">
                 {branches.map((branch) => {
                   const isSelected = selectedBranchId === branch.id;
+                  const isCalle5 = branch.id === 'calle-5';
+
                   return (
                     <button
                       key={branch.id}
@@ -446,13 +477,23 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       onClick={() => handleBranchSelect(branch.id)}
                       className={`relative p-5 rounded-2xl border-2 text-left transition-all duration-300 cursor-pointer flex items-start gap-4 active:scale-[0.99] ${
                         isSelected
-                          ? 'bg-zinc-900/90 border-[#1EB8BF] shadow-[0_0_25px_rgba(30,184,191,0.35)] scale-[1.01]'
-                          : 'bg-black/60 border-white/15 hover:border-white/40 hover:bg-zinc-900/40'
+                          ? isCalle5
+                            ? 'bg-zinc-900/90 border-[#ED3078] shadow-[0_0_25px_rgba(237,48,120,0.4)] scale-[1.01]'
+                            : 'bg-zinc-900/90 border-[#1EB8BF] shadow-[0_0_25px_rgba(30,184,191,0.4)] scale-[1.01]'
+                          : isCalle5
+                            ? 'bg-black/60 border-[#ED3078]/30 hover:border-[#ED3078]/80 hover:bg-zinc-900/40'
+                            : 'bg-black/60 border-[#1EB8BF]/30 hover:border-[#1EB8BF]/80 hover:bg-zinc-900/40'
                       }`}
                     >
                       <div 
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${
-                          isSelected ? 'bg-[#1EB8BF] text-black' : 'bg-zinc-800 text-zinc-300'
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-md transition-all ${
+                          isSelected
+                            ? isCalle5
+                              ? 'bg-[#ED3078] text-white shadow-[0_0_15px_rgba(237,48,120,0.6)]'
+                              : 'bg-[#1EB8BF] text-black shadow-[0_0_15px_rgba(30,184,191,0.6)]'
+                            : isCalle5
+                              ? 'bg-[#ED3078]/15 text-[#ED3078] border border-[#ED3078]/40'
+                              : 'bg-[#1EB8BF]/15 text-[#1EB8BF] border border-[#1EB8BF]/40'
                         }`}
                       >
                         <MapPin className="w-6 h-6" />
@@ -460,44 +501,53 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <h4 className="font-heading font-black text-base sm:text-lg text-white uppercase truncate">
-                            {branch.name}
+                          <h4 className="font-heading font-black text-base sm:text-lg text-white uppercase truncate flex items-center gap-2">
+                            <span>{branch.name}</span>
+                            <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full border ${
+                              isCalle5
+                                ? 'bg-[#ED3078]/20 border-[#ED3078] text-[#ED3078]'
+                                : 'bg-[#1EB8BF]/20 border-[#1EB8BF] text-[#1EB8BF]'
+                            }`}>
+                              {isCalle5 ? 'Sede Rosa' : 'Sede Cyan'}
+                            </span>
                           </h4>
                           {isSelected && (
-                            <span className="shrink-0 px-2 py-0.5 rounded-full bg-[#1EB8BF] text-black text-[10px] font-black uppercase">
+                            <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                              isCalle5 ? 'bg-[#ED3078] text-white' : 'bg-[#1EB8BF] text-black'
+                            }`}>
                               Activa
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-zinc-300 font-medium flex items-center gap-1 mt-1">
-                          <MapPin className="w-3 h-3 text-[#ED3078]" /> {branch.address}, {branch.city}
+                          <MapPin className={`w-3 h-3 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} /> {branch.address}, {branch.city}
                         </p>
                         <p className="text-[11px] text-zinc-400 font-medium flex items-center gap-1 mt-0.5">
                           <Phone className="w-3 h-3 text-[#A3BA13]" /> Tel: {branch.phone}
                         </p>
                         
                         <div className="mt-3 pt-3 border-t border-white/10 flex flex-col gap-1.5">
-                          {branch.id === 'calle-5' ? (
+                          {isCalle5 ? (
                             <>
                               <div className="flex items-center justify-between text-[10px] font-bold text-zinc-300">
                                 <span><User className="w-3 h-3 inline mr-1 text-[#ED3078]" />Máx: 40 Chicos / 30 Adultos</span>
-                                <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-white">667 MT2</span>
+                                <span className="bg-[#ED3078]/20 border border-[#ED3078]/40 px-1.5 py-0.5 rounded text-white font-black">667 MT2</span>
                               </div>
-                              <p className="text-[9px] text-[#A3BA13] font-bold">
-                                + INCLUYE RELOJ LOCO Y PLAZA BLANDA (menores 5 años)
+                              <p className="text-[10px] text-[#ED3078] font-black">
+                                ★ INCLUYE RELOJ LOCO Y PLAZA BLANDA (menores 5 años)
                               </p>
                             </>
-                          ) : branch.id === 'calle-13' ? (
+                          ) : (
                             <>
                               <div className="flex items-center justify-between text-[10px] font-bold text-zinc-300">
                                 <span><User className="w-3 h-3 inline mr-1 text-[#1EB8BF]" />Máx: 35 Chicos / 20 Adultos</span>
-                                <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-white">560 MT2</span>
+                                <span className="bg-[#1EB8BF]/20 border border-[#1EB8BF]/40 px-1.5 py-0.5 rounded text-white font-black">560 MT2</span>
                               </div>
-                              <p className="text-[9px] text-[#A3BA13] font-bold">
-                                + INCLUYE MÁS CIRCUITOS DEPORTIVOS (No incluye Reloj Loco)
+                              <p className="text-[10px] text-[#1EB8BF] font-black">
+                                ★ INCLUYE MÁS CIRCUITOS DEPORTIVOS (No incluye Reloj Loco)
                               </p>
                             </>
-                          ) : null}
+                          )}
                         </div>
                       </div>
                     </button>
@@ -520,7 +570,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     Paso 2: Elegí una Fecha en el Almanaque
                   </h3>
                   <p className="text-xs text-zinc-300 font-medium">
-                    Hacé clic en cualquier día para consultar los turnos disponibles en <strong className="text-[#1EB8BF]">{selectedBranch?.name}</strong>
+                    Hacé clic en cualquier día para consultar los turnos disponibles en <strong className={selectedBranchId === 'calle-5' ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}>{selectedBranch?.name}</strong>
                   </p>
                 </div>
               </div>
@@ -558,29 +608,62 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 {/* DYNAMIC BIRTHDAY PRICING FOR CURRENT SELECTED MONTH & ADDITIONALS */}
                 {(() => {
                   const currentMonthPricing = pricing.birthdays.monthlyBasePrices.find((m) => m.monthIndex === month);
-                  const basePrice = currentMonthPricing ? currentMonthPricing.basePrice : 500000;
+                  const isCalle5 = selectedBranchId === 'calle-5';
+                  const basePrice = currentMonthPricing
+                    ? (isCalle5 ? (currentMonthPricing.basePriceCalle5 ?? currentMonthPricing.basePrice) : (currentMonthPricing.basePriceCalle13 ?? currentMonthPricing.basePrice))
+                    : (isCalle5 ? 600000 : 550000);
+
+                  const branchAdditionals = isCalle5
+                    ? (currentMonthPricing?.additionalsCalle5 || pricing.birthdays.additionals.filter(a => a.branchId === 'calle-5'))
+                    : (currentMonthPricing?.additionalsCalle13 || pricing.birthdays.additionals.filter(a => a.branchId === 'calle-13'));
 
                   return (
-                    <div className="bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 border-[#1EB8BF]/40 rounded-2xl p-4 sm:p-5 space-y-3 sm:space-y-4 shadow-xl">
-                      {/* Top Header with Month Base Price */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-black uppercase text-[#1EB8BF] tracking-wider flex items-center gap-1.5">
-                            <Star className="w-3.5 h-3.5 text-[#F2C700]" /> Tarifa Base del Mes Elegido
-                          </span>
-                          <h4 className="font-heading font-black text-white text-base sm:text-lg uppercase">
+                    <div className={`bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl ${
+                      isCalle5 ? 'border-[#ED3078]/40' : 'border-[#1EB8BF]/40'
+                    }`}>
+                      {/* Top Header with Month Base Price & Payment Badges */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                        <div className="space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className={`text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 px-2.5 py-0.5 rounded-md ${
+                              isCalle5 ? 'bg-[#ED3078]/20 text-[#ED3078] border border-[#ED3078]/40' : 'bg-[#1EB8BF]/20 text-[#1EB8BF] border border-[#1EB8BF]/40'
+                            }`}>
+                              <Star className="w-3.5 h-3.5 text-[#F2C700]" /> Tarifa Base del Mes Elegido • {selectedBranch?.name}
+                            </span>
+                            <span className="text-[10px] font-bold text-zinc-300 bg-white/5 border border-white/10 px-2 py-0.5 rounded-md">
+                              {isCalle5 ? '667 m² de diversión' : '560 m² de diversión'}
+                            </span>
+                          </div>
+
+                          <h4 className="font-heading font-black text-white text-lg sm:text-xl uppercase">
                             Festejo Cumpleaños en <span className="text-[#F2C700] capitalize">{monthName}</span>
                           </h4>
-                          <p className="text-[11px] text-zinc-300 font-medium leading-relaxed">
-                            Contrato base: 20 chicos + 20 adultos, 2½ hs con profesores, atracciones exclusivas y menú infantil.
+                          <p className="text-xs text-zinc-300 font-medium leading-relaxed max-w-xl">
+                            Propuesta de 6 a 12 años • 2½ hs con profesores. Base 20 chicos y 20 adultos con atracciones y menú de regalo incluido.
                           </p>
+
+                          {/* Seña y formas de pago badges from flyer */}
+                          <div className="flex flex-wrap items-center gap-2 pt-1">
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-3 py-1 rounded-lg shadow-xs">
+                              <DollarSign className="w-3.5 h-3.5 text-emerald-400" />
+                              SEÑA {formatCurrency(pricing.birthdays.depositAmount)} [transferencia]
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-zinc-200 bg-white/5 border border-white/15 px-3 py-1 rounded-lg">
+                              Podés pagar: 50% con transferencia / 50% en efectivo
+                            </span>
+                          </div>
                         </div>
-                        <div className="bg-black/80 border-2 border-[#F2C700]/50 px-4 py-2.5 rounded-2xl text-center sm:text-right shrink-0 shadow-lg">
+
+                        {/* Base Price Big Badge */}
+                        <div className="bg-black/90 border-2 border-[#F2C700]/60 px-5 py-3 rounded-2xl text-center md:text-right shrink-0 shadow-lg self-start md:self-center">
                           <span className="text-[10px] font-black text-zinc-400 block uppercase tracking-wider">
-                            Valor Base {currentMonthPricing?.monthName || ''}
+                            Valor Base {currentMonthPricing?.monthName || monthName}
                           </span>
                           <span className="font-heading font-black text-2xl sm:text-3xl text-[#F2C700]">
                             {formatCurrency(basePrice)}
+                          </span>
+                          <span className="text-[10px] text-zinc-400 block font-medium mt-0.5">
+                            Base 20 chicos / 20 adultos
                           </span>
                         </div>
                       </div>
@@ -593,46 +676,198 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                           className="w-full py-2.5 px-3.5 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-200 text-xs font-bold flex items-center justify-between transition-colors border border-white/10 cursor-pointer min-h-[44px]"
                         >
                           <span className="flex items-center gap-1.5">
-                            <Tag className="w-3.5 h-3.5 text-[#1EB8BF]" />
-                            {showPricingDetailsMobile ? 'Ocultar aranceles y adicionales' : 'Ver adicionales (por si superás 20 chicos)'}
+                            <Tag className={`w-3.5 h-3.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                            {showPricingDetailsMobile ? 'Ocultar aranceles y adicionales' : 'Ver adicionales por si superás 20 chicos'}
                           </span>
                           {showPricingDetailsMobile ? <ChevronUp className="w-4 h-4 text-[#F2C700]" /> : <ChevronDown className="w-4 h-4 text-[#F2C700]" />}
                         </button>
                       </div>
 
                       {/* Additionals Breakdown for this Event */}
-                      <div className={`${showPricingDetailsMobile ? 'block' : 'hidden'} sm:block space-y-2.5 pt-1 sm:pt-0`}>
-                        <div className="flex items-center justify-between text-xs font-black text-zinc-200 uppercase tracking-wider">
+                      <div className={`${showPricingDetailsMobile ? 'block' : 'hidden'} sm:block space-y-3 pt-1 sm:pt-0`}>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-black text-zinc-200 uppercase tracking-wider">
                           <span className="flex items-center gap-1.5 text-white">
-                            <Tag className="w-3.5 h-3.5 text-[#1EB8BF]" /> Valores de Adicionales (por si superás los 20 chicos):
+                            <Tag className={`w-3.5 h-3.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} /> Valores de Adicionales ({selectedBranch?.name}):
                           </span>
-                          <span className="text-[10px] text-[#A3BA13] lowercase font-semibold hidden sm:inline">
-                            *se abonan 1 semana antes del evento
-                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[10px] text-[#A3BA13] bg-[#A3BA13]/15 border border-[#A3BA13]/30 px-2.5 py-0.5 rounded font-bold">
+                              Cada adicional incluye más personal y comida
+                            </span>
+                            <span className="text-[10px] text-zinc-400 font-medium">
+                              *Se abonan 1 semana antes del evento
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                          {pricing.birthdays.additionals.map((add) => (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                          {branchAdditionals.map((add) => (
                             <div
                               key={add.id}
-                              className="bg-zinc-950/70 border border-white/15 hover:border-[#1EB8BF]/40 rounded-xl p-3 flex flex-col justify-between space-y-1.5 transition-all shadow-xs"
+                              className={`bg-zinc-950/80 border-2 rounded-xl p-3 flex flex-col justify-between space-y-2 transition-all shadow-xs ${
+                                add.isMaxChicos
+                                  ? (isCalle5 ? 'border-[#ED3078] bg-[#ED3078]/10' : 'border-[#1EB8BF] bg-[#1EB8BF]/10')
+                                  : (isCalle5 ? 'border-white/15 hover:border-[#ED3078]/60' : 'border-white/15 hover:border-[#1EB8BF]/60')
+                              }`}
                             >
                               <div className="space-y-1">
-                                <span className="font-heading font-black text-xs text-white uppercase block leading-tight">
-                                  {add.name}
-                                </span>
-                                <p className="text-[10px] text-zinc-400 leading-tight">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-heading font-black text-xs sm:text-sm text-white uppercase">
+                                    {add.name}
+                                  </span>
+                                  {add.badge && (
+                                    <span className={`text-[9px] font-black uppercase px-1.5 py-0.5 rounded ${
+                                      isCalle5 ? 'bg-[#ED3078]/25 text-pink-200' : 'bg-[#1EB8BF]/25 text-cyan-200'
+                                    }`}>
+                                      {add.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-zinc-300 leading-tight">
                                   {add.description}
                                 </p>
                               </div>
                               <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                                <span className="text-[9px] text-zinc-400 font-bold uppercase">Valor:</span>
-                                <span className="font-heading font-black text-xs text-[#1EB8BF]">
+                                <span className="text-[9px] text-zinc-400 font-bold uppercase">Valor adicional:</span>
+                                <span className={`font-heading font-black text-sm ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`}>
                                   +{formatCurrency(add.price)}
                                 </span>
                               </div>
                             </div>
                           ))}
+
+                          {/* If Calle 13, show the strict no-adults policy card in the grid to keep exact visual balance */}
+                          {!isCalle5 && (
+                            <div className="bg-zinc-950/60 border-2 border-dashed border-[#1EB8BF]/30 rounded-xl p-3 flex flex-col justify-between space-y-2">
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-heading font-black text-xs text-zinc-300 uppercase">
+                                    Adultos en Calle 13
+                                  </span>
+                                  <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-zinc-800 text-amber-300 border border-amber-500/30">
+                                    Máx. 20 Adultos
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-zinc-400 leading-tight">
+                                  Por disposición del salón en Calle 13, <strong className="text-white">no se pueden agregar adultos adicionales</strong> a los 20 incluidos.
+                                </p>
+                              </div>
+                              <div className="pt-2 border-t border-white/10 text-[9px] text-zinc-500 font-bold uppercase">
+                                Límite estricto de capacidad
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Flyer Rules & Conditions Bar */}
+                        <div className="bg-black/50 border border-white/10 rounded-xl p-3 space-y-2 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-zinc-300 font-medium">
+                            <div className="flex items-start gap-2">
+                              <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                              <span><strong>Capacidad máxima:</strong> {isCalle5 ? '40 chicos y 30 adultos' : '35 chicos y 20 adultos'} (incluyendo contratantes y cumpleañero/a).</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                              <span><strong>Sectores separados:</strong> No se compensa cantidad de adultos con niños o viceversa.</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                              <span><strong>Cobro por adicional:</strong> Se cobra por adicional, no por persona individual.</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                              <span><strong>Asistencia el día del evento:</strong> Si van más chicos que los confirmados se cobrará el adicional en el momento.</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Collapsible: Ver Inclusiones y Menú de Regalo de esta Sede */}
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowInclusionsDetails(!showInclusionsDetails)}
+                            className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-zinc-200 text-xs font-bold flex items-center justify-between transition-colors border border-white/15 cursor-pointer min-h-[44px]"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Gift className={`w-4 h-4 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                              <span>¿Qué incluye el contrato y menú de regalo en <strong>{selectedBranch?.name}</strong>?</span>
+                            </span>
+                            {showInclusionsDetails ? <ChevronUp className="w-4 h-4 text-[#F2C700]" /> : <ChevronDown className="w-4 h-4 text-[#F2C700]" />}
+                          </button>
+
+                          {showInclusionsDetails && (
+                            <div className="mt-2.5 bg-zinc-950 border border-white/15 rounded-2xl p-4 space-y-4 animate-in fade-in duration-200">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Contract Inclusions */}
+                                <div className="space-y-2">
+                                  <h5 className="font-heading font-black text-xs uppercase tracking-wider text-[#F2C700] flex items-center gap-1.5">
+                                    <Star className="w-3.5 h-3.5" /> El contrato incluye ({isCalle5 ? '667 m²' : '560 m²'}):
+                                  </h5>
+                                  <ul className="text-[11px] text-zinc-300 space-y-1.5">
+                                    <li className="flex items-start gap-1.5">
+                                      <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                                      Muro de escalada y Tirolesa
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                      <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                                      Aro de acrobacia y Tela
+                                    </li>
+                                    {isCalle5 ? (
+                                      <>
+                                        <li className="flex items-start gap-1.5 font-bold text-white">
+                                          <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#ED3078]" />
+                                          RELOJ LOCO!! y Camas Elásticas (Exclusivo Calle 5)
+                                        </li>
+                                        <li className="flex items-start gap-1.5">
+                                          <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#ED3078]" />
+                                          Plaza blanda (para menores de 5 años)
+                                        </li>
+                                        <li className="flex items-start gap-1.5">
+                                          <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#ED3078]" />
+                                          Grupo electrógeno propio
+                                        </li>
+                                      </>
+                                    ) : (
+                                      <li className="flex items-start gap-1.5 font-bold text-white">
+                                        <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#1EB8BF]" />
+                                        Cancha de Básquetbol (Exclusivo Calle 13)
+                                      </li>
+                                    )}
+                                    <li className="flex items-start gap-1.5">
+                                      <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                                      Circuitos deportivos y Videojuegos
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                      <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                                      Personal de cocina, mozo y vajilla completa
+                                    </li>
+                                    <li className="flex items-start gap-1.5">
+                                      <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                                      Tarjeta virtual personalizada, seguro y asistencia médica, WiFi
+                                    </li>
+                                  </ul>
+                                </div>
+
+                                {/* Menu Inclusions */}
+                                <div className="space-y-2">
+                                  <h5 className="font-heading font-black text-xs uppercase tracking-wider text-[#A3BA13] flex items-center gap-1.5">
+                                    <Gift className="w-3.5 h-3.5" /> Menú de regalo incluido:
+                                  </h5>
+                                  <div className="space-y-2 text-[11px] text-zinc-300">
+                                    <div className="bg-black/60 p-2.5 rounded-xl border border-white/10">
+                                      <strong className="text-white block uppercase text-[10px] mb-1">Menú Chicos (20 chicos):</strong>
+                                      <p className="leading-tight">Snacks (1 vez) + 1 súper pancho o pizza + gaseosa, jugo y agua libre.</p>
+                                      <p className="text-[10px] text-zinc-400 mt-1 italic">* Avisar con anticipación para pizza, sino se servirán súper panchos. No se puede agregar comida para niños.</p>
+                                    </div>
+                                    <div className="bg-black/60 p-2.5 rounded-xl border border-white/10">
+                                      <strong className="text-white block uppercase text-[10px] mb-1">Menú Adultos (20 adultos):</strong>
+                                      <p className="leading-tight">Snacks (1 vez) + 1 empanada por persona (jamón y queso / carne) + 2 pizzas muzzarella cada 8 personas.</p>
+                                      <p className="text-[10px] text-zinc-400 mt-1 italic">* No incluye bebida. Se permite agregar comida extra solo para los adultos.</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         <div className="bg-white/5 border border-white/10 rounded-xl p-2.5 text-[10px] text-zinc-300 text-center flex items-center justify-center gap-2">
@@ -655,7 +890,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   <div>Sáb</div>
                 </div>
 
-                {/* Calendar Days Grid (CLEAN & NEUTRAL DESIGN: All future days identical) */}
+                {/* Calendar Days Grid */}
                 <div className="grid grid-cols-7 gap-1 sm:gap-2">
                   {/* Empty cells before month start */}
                   {Array.from({ length: firstDayIndex }).map((_, i) => (
@@ -670,6 +905,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     const dateStr = `${year}-${formattedMonth}-${formattedDay}`;
                     const isPast = isPastDate(dayNum);
                     const isSelected = selectedDateStr === dateStr;
+                    const isCalle5 = selectedBranchId === 'calle-5';
 
                     return (
                       <button
@@ -681,8 +917,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                           isPast
                             ? 'bg-zinc-900/30 text-zinc-600 border border-transparent cursor-not-allowed'
                             : isSelected
-                            ? 'bg-[#1EB8BF] text-black font-black border-2 border-white shadow-[0_0_20px_rgba(30,184,191,0.8)] scale-105 z-10'
-                            : 'bg-zinc-900/70 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#1EB8BF]/60 active:bg-[#1EB8BF]/30'
+                            ? isCalle5
+                              ? 'bg-[#ED3078] text-white font-black border-2 border-white shadow-[0_0_20px_rgba(237,48,120,0.85)] scale-105 z-10'
+                              : 'bg-[#1EB8BF] text-black font-black border-2 border-white shadow-[0_0_20px_rgba(30,184,191,0.85)] scale-105 z-10'
+                            : isCalle5
+                            ? 'bg-zinc-900/70 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#ED3078]/70 active:bg-[#ED3078]/30'
+                            : 'bg-zinc-900/70 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#1EB8BF]/70 active:bg-[#1EB8BF]/30'
                         }`}
                       >
                         <span>{dayNum}</span>
@@ -706,9 +946,40 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       </h4>
                     </div>
                     <span className="text-xs text-zinc-300 font-medium">
-                      Sucursal: <strong className="text-white">{selectedBranch?.name}</strong>
+                      Sucursal: <strong className={selectedBranchId === 'calle-5' ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}>{selectedBranch?.name}</strong>
                     </span>
                   </div>
+
+                  {/* Admin / Franquista Quick Block Toggle */}
+                  {(currentUser?.role === 'admin' || currentUser?.role === 'franquista') && (
+                    <div className="bg-zinc-950 border border-amber-500/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
+                          Panel de Administración • Franquicia {selectedBranch?.name}
+                        </span>
+                        <p className="text-xs font-bold text-white">
+                          {isDateBlocked ? '🔒 Este día está BLOQUEADO para reservas' : '🟢 Este día está DISPONIBLE para reservas'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const reason = prompt('Motivo del bloqueo (ej. Evento Privado, Mantenimiento):', 'Mantenimiento / Evento Privado');
+                          if (reason !== null) {
+                            toggleBlockDate(selectedDateStr, reason || 'Bloqueo Admin', selectedBranchId);
+                            loadData();
+                          }
+                        }}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all cursor-pointer shadow-md shrink-0 ${
+                          isDateBlocked 
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white' 
+                            : 'bg-[#ED3078] hover:bg-[#d82469] text-white'
+                        }`}
+                      >
+                        {isDateBlocked ? '🔓 Desbloquear Fecha' : '🔒 Bloquear Fecha'}
+                      </button>
+                    </div>
+                  )}
 
                   {isDateBlocked ? (
                     <div className="p-4 bg-zinc-950/80 border-2 border-[#ED3078] rounded-2xl text-center space-y-1">
@@ -724,6 +995,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       {getAvailableSlotsForDate(selectedDateStr).map((slot) => {
                         const isBooked = isSlotBooked(slot.id);
                         const isSelected = selectedSlotId === slot.id;
+                        const isCalle5 = selectedBranchId === 'calle-5';
 
                         return (
                           <button
@@ -736,6 +1008,8 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                 ? 'bg-zinc-950/50 border-zinc-800 text-zinc-500 cursor-not-allowed opacity-60'
                                 : isSelected
                                 ? 'bg-gradient-to-br from-zinc-900 to-black border-[#F2C700] text-white shadow-[0_0_20px_rgba(242,199,0,0.35)] scale-[1.01]'
+                                : isCalle5
+                                ? 'bg-black/60 border-white/15 text-zinc-200 hover:border-[#ED3078] hover:bg-zinc-900/60'
                                 : 'bg-black/60 border-white/15 text-zinc-200 hover:border-[#1EB8BF] hover:bg-zinc-900/60'
                             }`}
                           >
@@ -749,7 +1023,11 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                 </span>
                               ) : (
                                 <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
-                                  isSelected ? 'bg-[#F2C700] text-black' : 'bg-[#1EB8BF]/20 text-[#1EB8BF] border border-[#1EB8BF]/40'
+                                  isSelected 
+                                    ? 'bg-[#F2C700] text-black' 
+                                    : isCalle5
+                                    ? 'bg-[#ED3078]/20 text-[#ED3078] border border-[#ED3078]/50'
+                                    : 'bg-[#1EB8BF]/20 text-[#1EB8BF] border border-[#1EB8BF]/50'
                                 }`}>
                                   {isSelected ? 'Seleccionado ✓' : 'Disponible'}
                                 </span>
@@ -770,7 +1048,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 </div>
               ) : (
                 <div className="p-4 bg-zinc-950/40 border border-white/10 rounded-2xl text-center flex items-center justify-center gap-2 text-xs text-zinc-400">
-                  <Info className="w-4 h-4 text-[#1EB8BF]" />
+                  <Info className={`w-4 h-4 ${selectedBranchId === 'calle-5' ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
                   <span>Seleccioná un día del calendario arriba para desplegar el estado y disponibilidad de los turnos.</span>
                 </div>
               )}
@@ -787,7 +1065,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 className="bg-black/80 backdrop-blur-md rounded-3xl border-2 border-white/20 p-5 sm:p-8 space-y-6 shadow-xl animate-in fade-in slide-in-from-top-4 duration-300 scroll-mt-16"
               >
                 <div className="flex items-center gap-2.5 border-b border-white/10 pb-4">
-                  <div className="w-8 h-8 rounded-xl bg-[#ED3078] text-white font-black text-sm flex items-center justify-center shrink-0">
+                  <div className={`w-8 h-8 rounded-xl font-black text-sm flex items-center justify-center shrink-0 ${
+                    selectedBranchId === 'calle-5' ? 'bg-[#ED3078] text-white shadow-[0_0_12px_rgba(237,48,120,0.5)]' : 'bg-[#1EB8BF] text-black shadow-[0_0_12px_rgba(30,184,191,0.5)]'
+                  }`}>
                     3
                   </div>
                   <div>
@@ -795,7 +1075,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       Paso 3: Completá los Datos del Festejo
                     </h3>
                     <p className="text-xs text-zinc-300 font-medium">
-                      Turno: <strong className="text-[#F2C700]">{selectedDateFormatted}</strong> ({TIME_SLOTS.find(s => s.id === selectedSlotId)?.timeRange}) en <strong className="text-[#1EB8BF]">{selectedBranch?.name}</strong>
+                      Turno: <strong className="text-[#F2C700]">{selectedDateFormatted}</strong> ({TIME_SLOTS.find(s => s.id === selectedSlotId)?.timeRange}) en <strong className={selectedBranchId === 'calle-5' ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}>{selectedBranch?.name}</strong>
                     </p>
                   </div>
                 </div>
@@ -804,7 +1084,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   {/* Parent Name */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-black text-white uppercase flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-[#1EB8BF]" /> Tu Nombre y Apellido *
+                      <User className={`w-3.5 h-3.5 ${selectedBranchId === 'calle-5' ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} /> Tu Nombre y Apellido *
                     </label>
                     <input
                       type="text"
@@ -813,7 +1093,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                       placeholder="Ej: Mariana Gómez"
                       value={parentName}
                       onChange={(e) => setParentName(e.target.value)}
-                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-3 text-base sm:text-sm text-white placeholder-zinc-500 focus:border-[#1EB8BF] focus:outline-none"
+                      className={`w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-4 py-3 text-base sm:text-sm text-white placeholder-zinc-500 focus:outline-none ${
+                        selectedBranchId === 'calle-5' ? 'focus:border-[#ED3078]' : 'focus:border-[#1EB8BF]'
+                      }`}
                     />
                   </div>
 
@@ -857,7 +1139,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     <select
                       value={childAge}
                       onChange={(e) => setChildAge(Number(e.target.value))}
-                      className="w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-3 py-3 text-base sm:text-sm text-white focus:border-[#1EB8BF] focus:outline-none cursor-pointer min-h-[48px]"
+                      className={`w-full bg-zinc-950 border-2 border-zinc-800 rounded-xl px-3 py-3 text-base sm:text-sm text-white focus:outline-none cursor-pointer min-h-[48px] ${
+                        selectedBranchId === 'calle-5' ? 'focus:border-[#ED3078]' : 'focus:border-[#1EB8BF]'
+                      }`}
                     >
                       {[6, 7, 8, 9, 10, 11, 12].map((age) => (
                         <option key={age} value={age}>{age} años</option>
@@ -890,7 +1174,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   </div>
                   <div className="text-[10px] text-zinc-400 bg-white/5 p-2 rounded flex items-start gap-2">
                     <Info className="w-3.5 h-3.5 text-[#1EB8BF] shrink-0" />
-                    <span>Se pueden agregar invitados adicionales según la capacidad de cada sucursal (Máx Calle 5: 40 chicos / 30 adultos. Máx Calle 13: 35 chicos / 20 adultos).</span>
+                    <span>Se pueden agregar invitados adicionales según la capacidad de cada sucursal (Máx <strong className="text-[#ED3078]">Calle 5</strong>: 40 chicos / 30 adultos. Máx <strong className="text-[#1EB8BF]">Calle 13</strong>: 35 chicos / 20 adultos).</span>
                   </div>
                 </div>
 
@@ -899,7 +1183,11 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-[#F2C700] via-[#e6bd00] to-[#cfa300] hover:brightness-105 active:scale-[0.99] text-black font-heading font-black text-base uppercase py-4 px-6 rounded-2xl shadow-[0_6px_25px_rgba(242,199,0,0.45)] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className={`w-full hover:brightness-105 active:scale-[0.99] font-heading font-black text-base uppercase py-4 px-6 rounded-2xl transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                      selectedBranchId === 'calle-5'
+                        ? 'bg-gradient-to-r from-[#ED3078] via-[#df2369] to-[#c7175a] text-white shadow-[0_6px_25px_rgba(237,48,120,0.45)]'
+                        : 'bg-gradient-to-r from-[#1EB8BF] via-[#1aa3aa] to-[#14878d] text-black shadow-[0_6px_25px_rgba(30,184,191,0.45)]'
+                    }`}
                   >
                     {isSubmitting ? (
                       <RefreshCw className="w-5 h-5 animate-spin" />
@@ -917,6 +1205,12 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
           </div>
         )}
+
+        {/* Modal comparativo de sucursales */}
+        <BranchComparisonModal 
+          isOpen={isComparisonOpen} 
+          onClose={() => setIsComparisonOpen(false)} 
+        />
 
       </div>
     </section>

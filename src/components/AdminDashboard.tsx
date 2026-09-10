@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Reservation, BlockedDate, Branch, AppUser, Inquiry, UserRole } from '../types';
+import { Reservation, BlockedDate, Branch, AppUser, Inquiry, UserRole, CalendarBlock, CalendarBlockType } from '../types';
 import { 
   getReservations, 
   updateReservationStatus, 
   deleteReservation, 
   getBlockedDates, 
   toggleBlockDate, 
+  getCalendarBlocks,
+  addCalendarBlock,
+  removeCalendarBlock,
+  MONTH_NAMES_ES,
   addReservation, 
   getBranches,
   addBranch,
@@ -37,7 +41,8 @@ import {
   getRemainingReservationSeconds,
   resetReservationExpiration,
   isReservationCircuitCompleted,
-  unlockAppUser
+  unlockAppUser,
+  updateReservation
 } from '../services/storage';
 import { ViewWaiverDocumentModal } from './ViewWaiverDocumentModal';
 import { ApproveDepositModal } from './ApproveDepositModal';
@@ -131,12 +136,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // 2-Column layout
   const [viewColumns, setViewColumns] = useState<'2col' | '1col'>('2col');
 
   // Block date form state
+  const [calendarBlocks, setCalendarBlocks] = useState<CalendarBlock[]>([]);
+  const [blockType, setBlockType] = useState<CalendarBlockType>('single_day');
   const [blockDateStr, setBlockDateStr] = useState(new Date().toISOString().split('T')[0]);
+  const [blockStartDate, setBlockStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [blockEndDate, setBlockEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const [blockYear, setBlockYear] = useState<number>(new Date().getFullYear());
+  const [blockMonthIndex, setBlockMonthIndex] = useState<number>(new Date().getMonth());
   const [blockReason, setBlockReason] = useState('Evento Privado / Mantenimiento');
   const [blockBranchId, setBlockBranchId] = useState<string>('all');
 
@@ -150,6 +162,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   const [manualAge, setManualAge] = useState(6);
   const [manualKids, setManualKids] = useState(20);
   const [manualNotes, setManualNotes] = useState('');
+  const [manualTermsAndDepositApproved, setManualTermsAndDepositApproved] = useState(false);
 
   const handleManualDateChange = (newDateStr: string) => {
     setManualDate(newDateStr);
@@ -210,6 +223,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     setReservations(getReservations());
     setInquiries(getInquiries());
     setBlockedDates(getBlockedDates());
+    setCalendarBlocks(getCalendarBlocks());
     setAppUsers(getAppUsers());
 
     const user = getCurrentUser();
@@ -434,6 +448,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     searchQuery,
   ]);
 
+  // Pagination calculation (maximum 8 cards per page)
+  const RESERVATIONS_PER_PAGE = 8;
+  const totalPages = Math.ceil(filteredReservations.length / RESERVATIONS_PER_PAGE) || 1;
+  const validPage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const paginatedReservations = useMemo(() => {
+    const startIndex = (validPage - 1) * RESERVATIONS_PER_PAGE;
+    return filteredReservations.slice(startIndex, startIndex + RESERVATIONS_PER_PAGE);
+  }, [filteredReservations, validPage]);
+
+  // Reset pagination to page 1 whenever any filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, selectedBranchFilter, timeFilterMode, currentWeekOffset, selectedMonthFilter, searchQuery]);
+
   // Filtered inquiries list
   const filteredInquiries = useMemo(() => {
     return inquiries.filter((inq) => {
@@ -464,6 +493,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     }
   };
 
+  // Direct toggle for "Términos, condiciones y seña aprobados"
+  const handleToggleTermsAndDepositDirect = async (id: string, approved: boolean) => {
+    const target = reservations.find((r) => r.id === id);
+    if (!target) return;
+
+    const updatedFields: Partial<Reservation> = {
+      termsAndDepositApproved: approved,
+      termsApprovedAt: approved ? new Date().toISOString() : undefined,
+      depositPaid: approved,
+      depositAmount: approved ? (target.depositAmount || 100000) : target.depositAmount,
+      status: approved ? 'approved' : 'pending',
+      waiverStatus: approved ? 'signed' : 'pending',
+    };
+
+    const updated = await updateReservation(id, updatedFields);
+    setReservations(updated);
+
+    if (approved) {
+      const updatedTarget = updated.find((r) => r.id === id);
+      if (updatedTarget) {
+        setApprovalNoticeReservation(updatedTarget);
+      }
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (confirm('¿Estás seguro de eliminar esta reserva?')) {
       const updated = await deleteReservation(id);
@@ -475,6 +529,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     e.preventDefault();
     const updated = toggleBlockDate(blockDateStr, blockReason, blockBranchId);
     setBlockedDates(updated);
+    setCalendarBlocks(getCalendarBlocks());
+  };
+
+  const handleCreateCalendarBlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await addCalendarBlock({
+      type: blockType,
+      branchId: blockBranchId,
+      reason: blockReason,
+      date: blockType === 'single_day' ? blockDateStr : undefined,
+      startDate: blockType === 'date_range' ? blockStartDate : undefined,
+      endDate: blockType === 'date_range' ? blockEndDate : undefined,
+      year: blockType === 'full_month' ? blockYear : undefined,
+      monthIndex: blockType === 'full_month' ? blockMonthIndex : undefined,
+    });
+    setCalendarBlocks(getCalendarBlocks());
+    setBlockedDates(getBlockedDates());
+    setBlockReason('Evento Privado / Mantenimiento');
+  };
+
+  const handleRemoveCalendarBlock = async (id: string) => {
+    if (confirm('¿Estás seguro de eliminar este bloqueo del calendario?')) {
+      await removeCalendarBlock(id);
+      setCalendarBlocks(getCalendarBlocks());
+      setBlockedDates(getBlockedDates());
+    }
   };
 
   const handleCreateManual = async (e: React.FormEvent) => {
@@ -499,6 +579,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
       childAge: manualAge,
       estimatedKids: manualKids,
       additionalPackage: manualKids <= 20 ? 'base_20' : manualKids <= 28 ? 'adicional_21_28' : 'adicional_29_35',
+      status: manualTermsAndDepositApproved ? 'approved' : 'pending',
+      depositPaid: manualTermsAndDepositApproved,
+      depositAmount: manualTermsAndDepositApproved ? 100000 : 0,
+      termsAndDepositApproved: manualTermsAndDepositApproved,
+      termsApprovedAt: manualTermsAndDepositApproved ? new Date().toISOString() : undefined,
+      waiverStatus: manualTermsAndDepositApproved ? 'signed' : 'pending',
       notes: `[Carga Manual por ${currentUser?.displayName || 'Admin'}] ${manualNotes}`,
       createdByRole: currentUser?.role,
     });
@@ -509,6 +595,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
     setManualPhone('');
     setManualChild('');
     setManualNotes('');
+    setManualTermsAndDepositApproved(false);
   };
 
   // SuperAdmin: Add new branch
@@ -717,79 +804,77 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
         {/* CLEAN RESPONSIVE SEGMENTED BUTTON GRID (NO HORIZONTAL SCROLL) */}
-        <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-2">
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-1.5">
+        <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap lg:items-center gap-2">
             
             <button
               onClick={() => setActiveTab('reservas')}
-              className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-3.5 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] lg:flex-1 min-w-[135px] whitespace-nowrap ${
                 activeTab === 'reservas'
                   ? 'bg-[#1EB8BF] text-black shadow-md'
                   : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
               }`}
             >
               <CalendarIcon className="w-4 h-4 shrink-0" />
-              <span className="truncate">Reservas</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-black/20 text-current">
+              <span className="whitespace-nowrap">Reservas</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-black/20 text-current shrink-0">
                 {filteredReservations.length}
               </span>
             </button>
 
             <button
               onClick={() => setActiveTab('consultas')}
-              className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-3.5 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] lg:flex-1 min-w-[135px] whitespace-nowrap ${
                 activeTab === 'consultas'
                   ? 'bg-[#F2C700] text-black shadow-md'
                   : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
               }`}
             >
               <MessageCircle className="w-4 h-4 shrink-0" />
-              <span className="truncate">Consultas</span>
-              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-black/20 text-current">
+              <span className="whitespace-nowrap">Consultas</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-black/20 text-current shrink-0">
                 {filteredInquiries.length}
               </span>
             </button>
 
-            {/* BLOQUEOS: Hidden for Admin Dueño General */}
-            {currentUser?.role !== 'admin' && (
-              <button
-                onClick={() => setActiveTab('bloqueo')}
-                className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
-                  activeTab === 'bloqueo'
-                    ? 'bg-[#ED3078] text-white shadow-md'
-                    : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
-                }`}
-              >
-                <Lock className="w-4 h-4 shrink-0" />
-                <span className="truncate">Bloqueos</span>
-              </button>
-            )}
+            {/* BLOQUEOS: Visible for admin and franquista */}
+            <button
+              onClick={() => setActiveTab('bloqueo')}
+              className={`px-3.5 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] lg:flex-1 min-w-[135px] whitespace-nowrap ${
+                activeTab === 'bloqueo'
+                  ? 'bg-[#ED3078] text-white shadow-md'
+                  : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
+              }`}
+            >
+              <Lock className="w-4 h-4 shrink-0" />
+              <span className="whitespace-nowrap">Bloqueos</span>
+            </button>
 
             <button
               onClick={() => setActiveTab('nueva')}
-              className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+              className={`px-3.5 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] lg:flex-1 min-w-[135px] whitespace-nowrap ${
                 activeTab === 'nueva'
                   ? 'bg-[#A3BA13] text-black shadow-md'
                   : 'bg-black/40 text-zinc-300 hover:bg-zinc-800'
               }`}
             >
               <Plus className="w-4 h-4 shrink-0" />
-              <span className="truncate">Carga Manual</span>
+              <span className="whitespace-nowrap">Carga Manual</span>
             </button>
 
             {/* SUPERADMIN / ADMIN BUTTONS */}
             {isSuperAdmin && (
               <button
                 onClick={() => setActiveTab('sucursales')}
-                className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+                className={`px-3.5 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] lg:flex-1 min-w-[135px] whitespace-nowrap ${
                   activeTab === 'sucursales'
                     ? 'bg-[#ED3078] text-white shadow-md'
                     : 'bg-black/40 border border-[#ED3078]/40 text-[#ED3078] hover:bg-[#ED3078]/10'
                 }`}
               >
                 <Store className="w-4 h-4 shrink-0" />
-                <span className="truncate">Franquicias</span>
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-white/20 text-white">
+                <span className="whitespace-nowrap">Franquicias</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-white/20 text-white shrink-0">
                   {branches.length}
                 </span>
               </button>
@@ -800,19 +885,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
               <>
                 <button
                   onClick={() => setActiveTab('usuarios')}
-                  className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+                  className={`px-3.5 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] lg:flex-1 min-w-[135px] whitespace-nowrap ${
                     activeTab === 'usuarios'
                       ? 'bg-[#F2C700] text-black shadow-md'
                       : 'bg-black/40 border border-[#F2C700]/40 text-[#F2C700] hover:bg-[#F2C700]/10'
                   }`}
                 >
                   <Users className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Usuarios</span>
+                  <span className="whitespace-nowrap">Usuarios</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('precios')}
-                  className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+                  className={`px-3.5 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] lg:flex-1 min-w-[135px] whitespace-nowrap ${
                     activeTab === 'precios'
                       ? 'bg-[#A3BA13] text-black shadow-md'
                       : 'bg-black/40 border border-[#A3BA13]/40 text-[#A3BA13] hover:bg-[#A3BA13]/10'
@@ -820,12 +905,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   title="Gestión de Precios y Aranceles"
                 >
                   <Tag className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Precios</span>
+                  <span className="whitespace-nowrap">Precios</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('backup')}
-                  className={`p-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-[0.98] ${
+                  className={`px-3.5 py-2.5 min-h-[44px] rounded-xl font-heading font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.98] lg:flex-1 min-w-[135px] whitespace-nowrap ${
                     activeTab === 'backup'
                       ? 'bg-emerald-400 text-black shadow-md'
                       : 'bg-black/40 border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
@@ -833,7 +918,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   title="Copias de Seguridad y Backups de Base de Datos"
                 >
                   <Database className="w-4 h-4 shrink-0" />
-                  <span className="truncate">Backups</span>
+                  <span className="whitespace-nowrap">Backups</span>
                 </button>
               </>
             )}
@@ -1185,25 +1270,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                 </div>
               </div>
             ) : (
-              <div className={`grid grid-cols-1 ${viewColumns === '2col' ? 'md:grid-cols-2' : 'grid-cols-1'} gap-5 items-stretch`}>
-                {filteredReservations.map((res) => {
+              <div className="space-y-6">
+                <div className={`grid grid-cols-1 ${viewColumns === '2col' ? 'md:grid-cols-2' : 'grid-cols-1'} gap-5 items-stretch`}>
+                  {paginatedReservations.map((res) => {
                   const isApproved = res.status === 'approved';
                   const isPending = res.status === 'pending';
                   const isRejected = res.status === 'rejected';
-                  const isWaiverSigned = res.liabilityWaiver?.status === 'signed' || res.waiverStatus === 'signed';
-                  const isCircuitComplete = isReservationCircuitCompleted(res);
-                  const isExpired = isReservationExpired(res);
+                  const isTermsAndDepositApproved = Boolean(
+                    res.termsAndDepositApproved || (isApproved && res.depositPaid)
+                  );
+                  const isWaiverSigned = res.liabilityWaiver?.status === 'signed' || res.waiverStatus === 'signed' || isTermsAndDepositApproved;
+                  const isCircuitComplete = isReservationCircuitCompleted(res) || isTermsAndDepositApproved;
+                  const isExpired = !isTermsAndDepositApproved && isReservationExpired(res);
                   const remainingHoldSeconds = getRemainingReservationSeconds(res);
 
                   // Calculate missing data / pending requirements
                   const missingItems: string[] = [];
-                  if (!isWaiverSigned && !isRejected) missingItems.push('Aceptación T&C');
+                  if (!isWaiverSigned && !isRejected && !isTermsAndDepositApproved) missingItems.push('Aceptación T&C');
                   if (!res.parentEmail && !isRejected) missingItems.push('Email de contacto');
                   if (!res.adultsFoodInfo && !isRejected) missingItems.push('Menú adultos');
 
                   // Readiness assessment
-                  const isFullyComplete = isApproved && isWaiverSigned && !!res.parentEmail;
-                  const isCriticalMissing = isPending && !isWaiverSigned;
+                  const isFullyComplete = (isApproved && isWaiverSigned) || isTermsAndDepositApproved;
+                  const isCriticalMissing = isPending && !isWaiverSigned && !isTermsAndDepositApproved;
 
                   // Top header color theme based on missing data status
                   let topThemeClass = 'bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400';
@@ -1254,10 +1343,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       {/* CARD TOP ZONE: Date, Turno, Branch & Status Badges */}
                       <div className="space-y-3.5">
                         
-                        {/* Header: Date + Branch & Missing Data Status Banner */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/90 pb-3">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-black/90 border border-zinc-700/80 text-white text-xs font-black">
+                        {/* Header: Date + Branch & Status on left, Edit Pencil button aligned at the top right with Date/Time */}
+                        <div className="flex items-start justify-between gap-2 border-b border-zinc-800/90 pb-3">
+                          <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 h-8 rounded-xl bg-black/90 border border-zinc-700/80 text-white text-xs font-black shrink-0">
                               <CalendarIcon className="w-3.5 h-3.5 text-amber-400" />
                               <span className="capitalize">{formatDateWithWeekday(res.date)}</span>
                               <span className="text-zinc-600">•</span>
@@ -1265,16 +1354,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                               <span className="text-zinc-300 font-bold">{res.slotTime}</span>
                             </div>
 
-                            <div className="px-2.5 py-1 rounded-xl bg-zinc-800/90 border border-zinc-700/60 text-zinc-300 text-xs font-bold flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-[#1EB8BF]" />
-                              <span className="truncate max-w-[120px]">{res.branchName}</span>
+                            <div className={`px-2.5 py-1 h-8 rounded-xl text-xs font-bold flex items-center gap-1.5 shrink-0 ${
+                              res.branchId === 'calle-5' || res.branchName?.toLowerCase().includes('5')
+                                ? 'bg-[#ED3078]/15 border border-[#ED3078]/40 text-[#ED3078]'
+                                : 'bg-[#1EB8BF]/15 border border-[#1EB8BF]/40 text-[#1EB8BF]'
+                            }`}>
+                              <MapPin className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate max-w-[120px] font-black">{res.branchName}</span>
                             </div>
-                          </div>
 
-                          {/* Missing-Data State Pill */}
-                          <div className="flex flex-wrap items-center gap-1.5">
+                            {/* Missing-Data State Pill */}
                             <span
-                              className={`px-2.5 py-1 rounded-xl text-[11px] font-black uppercase flex items-center gap-1.5 border transition-all ${statusBadgeColor}`}
+                              className={`px-2.5 py-1 h-8 rounded-xl text-[11px] font-black uppercase flex items-center gap-1.5 border transition-all shrink-0 ${statusBadgeColor}`}
                             >
                               {isFullyComplete ? (
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -1286,6 +1377,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                               <span>{statusBadgeText}</span>
                             </span>
                           </div>
+
+                          {/* Top-Right Pencil Edit Button (perfectly aligned with date & time) */}
+                          <button
+                            type="button"
+                            onClick={() => setReservationToEdit(res)}
+                            className="w-8 h-8 rounded-xl bg-zinc-800/90 hover:bg-amber-400 hover:text-black text-amber-400 border border-zinc-700 hover:border-amber-400 transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-sm self-start ml-1"
+                            title="Editar datos de la reserva"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 shrink-0" />
+                          </button>
                         </div>
 
                         {/* CARD BODY: Birthday Child Specs */}
@@ -1353,6 +1454,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                               <span>{isWaiverSigned ? 'Términos: ACEPTADOS' : 'Términos: PENDIENTES'}</span>
                             </span>
 
+                            {/* Deposit Payment Badge */}
+                            <span
+                              className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase flex items-center gap-1 border ${
+                                res.depositPaid || isTermsAndDepositApproved
+                                  ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+                              }`}
+                            >
+                              <DollarSign className="w-3 h-3 text-emerald-400" />
+                              <span>{res.depositPaid || isTermsAndDepositApproved ? 'Seña: ACREDITADA' : 'Seña: PENDIENTE'}</span>
+                            </span>
+
                             {/* 40-Minute Hold Status Badge */}
                             {!isRejected && (
                               <span
@@ -1391,7 +1504,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                             )}
 
                             {/* Missing summary warning badge if items pending */}
-                            {missingItems.length > 0 && !isRejected && (
+                            {missingItems.length > 0 && !isRejected && !isTermsAndDepositApproved && (
                               <span className="text-[10px] text-zinc-400 flex items-center gap-1 pl-1">
                                 <span className="text-amber-400 font-black">•</span> Faltan: {missingItems.join(', ')}
                               </span>
@@ -1429,134 +1542,102 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       </div>
 
                       {/* CARD FOOTER: Logical Action Toolbar */}
-                      <div className="mt-4 pt-3.5 border-t border-zinc-800/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="mt-4 pt-3.5 border-t border-zinc-800/90 flex items-end justify-between gap-2.5">
                         
                         {/* Primary Workflow Actions */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+                        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                           
                           {/* 1. Terms & Conditions Link Actions */}
-                          <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                            {!isWaiverSigned ? (
-                              <a
-                                href={generateWaiverWhatsAppMessage(res)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={() => {
-                                  markReservationTermsSent(res.id);
-                                  setTimeout(loadData, 300);
-                                }}
-                                className="flex-1 sm:flex-initial px-3.5 py-2 min-h-[42px] rounded-xl bg-emerald-500/20 hover:bg-[#25D366] text-emerald-300 hover:text-black border border-emerald-500/50 font-black text-xs uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md text-center"
-                                title="Enviar enlace de Términos y Condiciones al WhatsApp del usuario (inicia retención de 40 minutos)"
-                              >
-                                <MessageCircle className="w-4 h-4 text-[#25D366] group-hover:text-black shrink-0" />
-                                <span>ENVIAR TÉRMINOS Y CONDICIONES</span>
-                              </a>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => setWaiverDocReservation(res)}
-                                className="flex-1 sm:flex-initial px-3 py-2 min-h-[42px] rounded-xl bg-teal-500/20 hover:bg-teal-500 text-teal-300 hover:text-black border border-teal-500/40 font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                                title="Ver Términos y Condiciones aceptados"
-                              >
-                                <FileText className="w-4 h-4 shrink-0" />
-                                <span>Ver Términos Aceptados</span>
-                              </button>
-                            )}
-
-                            {/* Direct copy link button */}
-                            <button
-                              type="button"
+                          {!isWaiverSigned ? (
+                            <a
+                              href={generateWaiverWhatsAppMessage(res)}
+                              target="_blank"
+                              rel="noopener noreferrer"
                               onClick={() => {
                                 markReservationTermsSent(res.id);
                                 setTimeout(loadData, 300);
-                                const link = generateWaiverShareLink(res.id);
-                                navigator.clipboard.writeText(link);
-                                alert('¡Enlace del formulario copiado al portapapeles! Se inició el plazo de retención por 40 minutos.');
                               }}
-                              className="p-2.5 min-h-[42px] min-w-[42px] rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white border border-zinc-700 transition-colors cursor-pointer flex items-center justify-center shrink-0"
-                              title="Copiar enlace directo al portapapeles e iniciar plazo de 40 min"
+                              className="px-3.5 py-2 min-h-[40px] h-10 rounded-xl bg-emerald-500/20 hover:bg-[#25D366] text-emerald-300 hover:text-black border border-emerald-500/50 font-black text-xs uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md text-center"
+                              title="Enviar enlace de Términos y Condiciones al WhatsApp del usuario (inicia retención de 40 minutos)"
                             >
-                              <ExternalLink className="w-4 h-4" />
+                              <MessageCircle className="w-4 h-4 text-[#25D366] group-hover:text-black shrink-0" />
+                              <span>ENVIAR TÉRMINOS Y CONDICIONES</span>
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setWaiverDocReservation(res)}
+                              className="px-3.5 py-2 min-h-[40px] h-10 rounded-xl bg-teal-500/20 hover:bg-teal-500 text-teal-300 hover:text-black border border-teal-500/40 font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                              title="Ver Términos y Condiciones aceptados"
+                            >
+                              <FileText className="w-4 h-4 shrink-0" />
+                              <span>Ver Términos Aceptados</span>
                             </button>
+                          )}
 
-                            {/* Re-activate 40 min if expired and not completed */}
-                            {isExpired && !isCircuitComplete && (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  await resetReservationExpiration(res.id);
-                                  loadData();
-                                  alert('¡Se reinició el plazo de 40 minutos! El turno vuelve a figurar retenido en el almanaque.');
-                                }}
-                                className="flex-1 sm:flex-initial px-3 py-2 min-h-[42px] rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                                title="Reiniciar el plazo de retención por otros 40 minutos"
-                              >
-                                <RefreshCw className="w-3.5 h-3.5 shrink-0" />
-                                <span>Reactivar 40 min</span>
-                              </button>
-                            )}
-                          </div>
+                          {/* Re-activate 40 min if expired and not completed */}
+                          {isExpired && !isCircuitComplete && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await resetReservationExpiration(res.id);
+                                loadData();
+                                alert('¡Se reinició el plazo de 40 minutos! El turno vuelve a figurar retenido en el almanaque.');
+                              }}
+                              className="px-3 py-2 min-h-[40px] h-10 rounded-xl bg-amber-500/20 hover:bg-amber-500 text-amber-300 hover:text-black border border-amber-500/40 font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                              title="Reiniciar el plazo de retención por otros 40 minutos"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5 shrink-0" />
+                              <span>Reactivar 40 min</span>
+                            </button>
+                          )}
 
                           {/* 2. Confirmation Action */}
-                          <div className="w-full sm:w-auto">
-                            {isPending ? (
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateStatus(res.id, 'approved')}
-                                className="w-full sm:w-auto px-3.5 py-2 min-h-[42px] rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-heading font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
-                                title="Confirmar y habilitar la reserva"
-                              >
-                                <Check className="w-4 h-4 stroke-[3] shrink-0" />
-                                <span>Confirmar Reserva</span>
-                              </button>
-                            ) : isApproved ? (
-                              <button
-                                type="button"
-                                onClick={() => handleUpdateStatus(res.id, 'pending')}
-                                className="w-full sm:w-auto px-3 py-2 min-h-[42px] rounded-xl bg-emerald-950/80 hover:bg-zinc-800 text-emerald-300 hover:text-white border border-emerald-700/60 font-bold text-xs uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                                title="Cambiar a estado pendiente"
-                              >
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                                <span>Reserva Confirmada (Cambiar)</span>
-                              </button>
-                            ) : null}
-                          </div>
+                          {isPending ? (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStatus(res.id, 'approved')}
+                              className="px-3.5 py-2 min-h-[40px] h-10 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-heading font-black text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-md"
+                              title="Confirmar y habilitar la reserva"
+                            >
+                              <Check className="w-4 h-4 stroke-[3] shrink-0" />
+                              <span>Confirmar Reserva</span>
+                            </button>
+                          ) : isApproved ? (
+                            <button
+                              type="button"
+                              onClick={() => handleUpdateStatus(res.id, 'pending')}
+                              className="px-3.5 py-2 min-h-[40px] h-10 rounded-xl bg-emerald-950/80 hover:bg-zinc-800 text-emerald-300 hover:text-white border border-emerald-700/60 font-bold text-xs uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                              title="Cambiar a estado pendiente"
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                              <span>Reserva Confirmada (Cambiar)</span>
+                            </button>
+                          ) : null}
 
                         </div>
 
-                        {/* Right Group: Edit, Direct Chat & Delete */}
-                        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end pt-1 sm:pt-0">
+                        {/* Right Group: Direct Chat Icon & Delete Icon (Always aligned to bottom margin with the last button) */}
+                        <div className="flex items-center gap-2 shrink-0 self-end">
                           
-                          {/* EDIT RESERVATION BUTTON */}
-                          <button
-                            type="button"
-                            onClick={() => setReservationToEdit(res)}
-                            className="flex-1 sm:flex-initial min-h-[38px] p-2 px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-white border border-zinc-700 font-bold text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                            title="Editar datos de la ficha de reserva"
-                          >
-                            <Edit2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                            <span>Editar</span>
-                          </button>
-
-                          {/* Direct WhatsApp Chat */}
+                          {/* Direct WhatsApp Chat Icon Only */}
                           <a
                             href={`https://api.whatsapp.com/send?phone=${formatWhatsAppNumber(res.parentPhone)}&text=${encodeURIComponent(
                               `¡Hola ${res.parentName}! 👋 Te escribimos desde *${res.branchName}* por la reserva para el cumple de *${res.childName}* 🎪🎉.`
                             )}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 sm:flex-initial min-h-[38px] p-2 px-3 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366] text-[#25D366] hover:text-black border border-[#25D366]/40 font-bold text-xs uppercase flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                            title="Abrir chat directo de WhatsApp"
+                            className="w-10 h-10 min-h-[40px] min-w-[40px] p-2.5 rounded-xl bg-[#25D366]/20 hover:bg-[#25D366] text-[#25D366] hover:text-black border border-[#25D366]/40 transition-all cursor-pointer flex items-center justify-center shrink-0 shadow-sm"
+                            title={`Abrir chat directo de WhatsApp con ${res.parentName}`}
                           >
-                            <MessageCircle className="w-3.5 h-3.5 shrink-0" />
-                            <span>Chat</span>
+                            <MessageCircle className="w-4 h-4 shrink-0" />
                           </a>
 
                           {/* DELETE RESERVATION BUTTON */}
                           <button
                             type="button"
                             onClick={() => setReservationToDelete(res)}
-                            className="min-h-[38px] min-w-[38px] p-2 rounded-xl bg-zinc-950 hover:bg-red-950/60 text-zinc-500 hover:text-red-400 border border-zinc-800 hover:border-red-800/50 transition-colors cursor-pointer flex items-center justify-center shrink-0"
+                            className="w-10 h-10 min-h-[40px] min-w-[40px] p-2.5 rounded-xl bg-zinc-950 hover:bg-red-950/60 text-zinc-500 hover:text-red-400 border border-zinc-800 hover:border-red-800/50 transition-colors cursor-pointer flex items-center justify-center shrink-0"
                             title="Eliminar Reserva"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1569,7 +1650,91 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   );
                 })}
               </div>
-            )}
+
+              {/* PAGINATION CONTROLS (MAXIMUM 8 CARDS PER PAGE) */}
+              {totalPages > 1 && (
+                <div className="bg-[#0e1117] border border-zinc-800/90 rounded-2xl p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xl">
+                  <div className="text-xs text-zinc-400 font-bold flex items-center gap-1.5 flex-wrap">
+                    <span>Mostrando</span>
+                    <strong className="text-amber-400 font-black">
+                      {(validPage - 1) * RESERVATIONS_PER_PAGE + 1} - {Math.min(validPage * RESERVATIONS_PER_PAGE, filteredReservations.length)}
+                    </strong>
+                    <span>de</span>
+                    <strong className="text-white font-black">{filteredReservations.length}</strong>
+                    <span>fichas</span>
+                    <span className="text-zinc-600">•</span>
+                    <span>Página <strong className="text-white">{validPage}</strong> de <strong className="text-white">{totalPages}</strong></span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage((prev) => Math.max(1, prev - 1));
+                        window.scrollTo({ top: 400, behavior: 'smooth' });
+                      }}
+                      disabled={validPage === 1}
+                      className="px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-black uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+                      title="Página Anterior"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span className="hidden sm:inline">Anterior</span>
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => {
+                      if (
+                        totalPages > 8 &&
+                        pageNumber !== 1 &&
+                        pageNumber !== totalPages &&
+                        Math.abs(pageNumber - validPage) > 2
+                      ) {
+                        if (pageNumber === 2 || pageNumber === totalPages - 1) {
+                          return (
+                            <span key={pageNumber} className="px-1 text-zinc-600 text-xs font-mono">
+                              ...
+                            </span>
+                          );
+                        }
+                        return null;
+                      }
+
+                      return (
+                        <button
+                          key={pageNumber}
+                          type="button"
+                          onClick={() => {
+                            setCurrentPage(pageNumber);
+                            window.scrollTo({ top: 400, behavior: 'smooth' });
+                          }}
+                          className={`min-w-[36px] h-9 px-2.5 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center justify-center ${
+                            validPage === pageNumber
+                              ? 'bg-amber-400 text-black shadow-md font-black'
+                              : 'bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-300 hover:text-white'
+                          }`}
+                        >
+                          {pageNumber}
+                        </button>
+                      );
+                    })}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCurrentPage((prev) => Math.min(totalPages, prev + 1));
+                        window.scrollTo({ top: 400, behavior: 'smooth' });
+                      }}
+                      disabled={validPage === totalPages}
+                      className="px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-black uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
+                      title="Página Siguiente"
+                    >
+                      <span className="hidden sm:inline">Siguiente</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           </div>
         )}
@@ -1595,7 +1760,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                 {filteredInquiries.map((inq) => (
                   <div key={inq.id} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="px-2.5 py-0.5 rounded-md bg-zinc-800 text-[#1EB8BF] font-black text-xs uppercase flex items-center gap-1">
+                      <span className={`px-2.5 py-0.5 rounded-md font-black text-xs uppercase flex items-center gap-1 border ${
+                        inq.branchId === 'calle-5' || inq.branchName?.toLowerCase().includes('5')
+                          ? 'bg-[#ED3078]/15 border-[#ED3078]/40 text-[#ED3078]'
+                          : 'bg-[#1EB8BF]/15 border-[#1EB8BF]/40 text-[#1EB8BF]'
+                      }`}>
                         <MapPin className="w-3 h-3" /> {inq.branchName}
                       </span>
                       <span className="text-xs text-zinc-400 font-medium">{new Date(inq.createdAt).toLocaleDateString('es-ES')}</span>
@@ -1626,16 +1795,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
         )}
 
         {/* ========================================================================= */}
-        {/* TAB 3: BLOQUEO DE FECHAS                                                  */}
+        {/* TAB 3: BLOQUEO DE FECHAS, PERÍODOS Y MESES                                */}
         {/* ========================================================================= */}
-        {currentUser?.role !== 'admin' && activeTab === 'bloqueo' && (
+        {activeTab === 'bloqueo' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4">
               <h3 className="font-heading font-black text-lg text-white uppercase flex items-center gap-2">
-                <Lock className="w-5 h-5 text-[#ED3078]" /> Bloquear Día
+                <Lock className="w-5 h-5 text-[#ED3078]" /> Bloquear Calendario
               </h3>
 
-              <form onSubmit={handleToggleBlock} className="space-y-4">
+              <form onSubmit={handleCreateCalendarBlock} className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-zinc-300 uppercase">Sucursal a Bloquear</label>
                   <select
@@ -1652,51 +1821,138 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-300 uppercase">Fecha</label>
-                  <input
-                    type="date"
-                    required
-                    value={blockDateStr}
-                    onChange={(e) => setBlockDateStr(e.target.value)}
+                  <label className="text-xs font-bold text-zinc-300 uppercase">Tipo de Bloqueo</label>
+                  <select
+                    value={blockType}
+                    onChange={(e) => setBlockType(e.target.value as CalendarBlockType)}
                     className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
-                  />
+                  >
+                    <option value="single_day">Día Específico</option>
+                    <option value="date_range">Rango de Fechas (Período)</option>
+                    <option value="full_month">Mes Completo</option>
+                  </select>
                 </div>
 
+                {blockType === 'single_day' && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-zinc-300 uppercase flex items-center justify-between">
+                      <span>Fecha Específica *</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={blockDateStr}
+                      style={{ colorScheme: 'dark' }}
+                      onChange={(e) => setBlockDateStr(e.target.value)}
+                      className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white [color-scheme:dark]"
+                    />
+                  </div>
+                )}
+
+                {blockType === 'date_range' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-300 uppercase">Desde *</label>
+                      <input
+                        type="date"
+                        required
+                        value={blockStartDate}
+                        style={{ colorScheme: 'dark' }}
+                        onChange={(e) => setBlockStartDate(e.target.value)}
+                        className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white [color-scheme:dark]"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-300 uppercase">Hasta *</label>
+                      <input
+                        type="date"
+                        required
+                        value={blockEndDate}
+                        style={{ colorScheme: 'dark' }}
+                        onChange={(e) => setBlockEndDate(e.target.value)}
+                        className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white [color-scheme:dark]"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {blockType === 'full_month' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-300 uppercase">Mes *</label>
+                      <select
+                        value={blockMonthIndex}
+                        onChange={(e) => setBlockMonthIndex(Number(e.target.value))}
+                        className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                      >
+                        {MONTH_NAMES_ES.map((mName, idx) => (
+                          <option key={idx} value={idx}>{mName}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-zinc-300 uppercase">Año *</label>
+                      <select
+                        value={blockYear}
+                        onChange={(e) => setBlockYear(Number(e.target.value))}
+                        className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                      >
+                        {[2026, 2027, 2028, 2029].map((yr) => (
+                          <option key={yr} value={yr}>{yr}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-300 uppercase">Motivo</label>
+                  <label className="text-xs font-bold text-zinc-300 uppercase">Motivo del Bloqueo</label>
                   <input
                     type="text"
                     required
                     value={blockReason}
                     onChange={(e) => setBlockReason(e.target.value)}
                     className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                    placeholder="Ej. Vacaciones, Mantenimiento, Feriado"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full bg-[#ED3078] hover:bg-[#d82469] text-white font-black text-xs uppercase py-3 rounded-xl transition-all cursor-pointer"
+                  className="w-full bg-[#ED3078] hover:bg-[#d82469] text-white font-black text-xs uppercase py-3 rounded-xl transition-all cursor-pointer shadow-md"
                 >
-                  Alternar Bloqueo de Fecha
+                  Bloquear Calendario
                 </button>
               </form>
             </div>
 
             <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-3xl p-6 space-y-4">
-              <h3 className="font-heading font-black text-lg text-white uppercase">Fechas Bloqueadas Activas</h3>
-              {blockedDates.length === 0 ? (
-                <p className="text-xs text-zinc-400">No hay fechas bloqueadas actualmente.</p>
+              <h3 className="font-heading font-black text-lg text-white uppercase">Bloqueos Activos en el Calendario</h3>
+              {calendarBlocks.length === 0 ? (
+                <p className="text-xs text-zinc-400">No hay bloqueos de días, períodos o meses actualmente.</p>
               ) : (
-                <div className="space-y-2">
-                  {blockedDates.map((b, idx) => (
-                    <div key={idx} className="bg-black/60 border border-zinc-800 rounded-xl p-3 flex items-center justify-between">
-                      <div>
-                        <span className="font-black text-white text-xs block">{b.date}</span>
-                        <span className="text-[11px] text-zinc-400">{b.reason}</span>
+                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+                  {calendarBlocks.map((b) => (
+                    <div key={b.id} className="bg-black/60 border border-zinc-800 rounded-xl p-3.5 flex items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="bg-[#ED3078]/20 text-[#ED3078] text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                            {b.type === 'single_day' ? 'Día Específico' : b.type === 'date_range' ? 'Rango de Fechas' : 'Mes Completo'}
+                          </span>
+                          <span className="text-zinc-400 text-xs font-bold">
+                            {b.branchName || (b.branchId === 'all' ? 'Todas las Sucursales' : b.branchId)}
+                          </span>
+                        </div>
+                        <p className="text-xs font-black text-white">
+                          {b.type === 'single_day' && `Fecha: ${b.date}`}
+                          {b.type === 'date_range' && `Desde ${b.startDate} hasta ${b.endDate}`}
+                          {b.type === 'full_month' && `Mes: ${b.monthName || b.monthKey}`}
+                        </p>
+                        <p className="text-[11px] text-zinc-400">Motivo: {b.reason}</p>
                       </div>
                       <button
-                        onClick={() => toggleBlockDate(b.date, b.reason, b.branchId || 'all')}
-                        className="px-2.5 py-1 rounded-lg bg-zinc-800 text-xs font-bold text-red-400 hover:bg-zinc-700 cursor-pointer"
+                        onClick={() => handleRemoveCalendarBlock(b.id)}
+                        className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-xs font-bold text-red-400 transition-colors cursor-pointer shrink-0"
                       >
                         Desbloquear
                       </button>
@@ -1735,14 +1991,37 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-300 uppercase">Fecha</label>
-                  <input
-                    type="date"
-                    required
-                    value={manualDate}
-                    onChange={(e) => handleManualDateChange(e.target.value)}
-                    className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white min-h-[42px]"
-                  />
+                  <label className="text-xs font-bold text-zinc-300 uppercase flex items-center justify-between">
+                    <span>Fecha del Festejo *</span>
+                    <span className="text-amber-400 text-[10px] lowercase font-normal flex items-center gap-0.5">
+                      <CalendarIcon className="w-3 h-3" /> clic en almanaque
+                    </span>
+                  </label>
+                  <div className="relative flex items-center">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        const input = e.currentTarget.parentElement?.querySelector('input');
+                        if (input && 'showPicker' in input) {
+                          (input as any).showPicker();
+                        } else {
+                          input?.focus();
+                        }
+                      }}
+                      className="absolute left-3 text-amber-400 hover:text-amber-300 transition-colors cursor-pointer z-10 flex items-center justify-center p-0.5"
+                      title="Abrir almanaque para seleccionar fecha"
+                    >
+                      <CalendarIcon className="w-4 h-4 text-amber-400" />
+                    </button>
+                    <input
+                      type="date"
+                      required
+                      value={manualDate}
+                      style={{ colorScheme: 'dark' }}
+                      onChange={(e) => handleManualDateChange(e.target.value)}
+                      className="w-full bg-black border-2 border-zinc-700 hover:border-amber-400 focus:border-[#1EB8BF] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white min-h-[42px] cursor-pointer [color-scheme:dark] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:brightness-150 [&::-webkit-calendar-picker-indicator]:scale-125 transition-colors"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -1815,6 +2094,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   onChange={(e) => setManualNotes(e.target.value)}
                   className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white"
                 />
+              </div>
+
+              {/* CHECKBOX PROMINENTE: Términos, condiciones y seña aprobados */}
+              <div className={`p-3.5 rounded-2xl border-2 transition-all cursor-pointer ${
+                manualTermsAndDepositApproved
+                  ? 'bg-emerald-950/70 border-emerald-500 text-white shadow-lg shadow-emerald-950/40'
+                  : 'bg-black/70 border-zinc-700 hover:border-zinc-500 text-zinc-300'
+              }`}>
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={manualTermsAndDepositApproved}
+                    onChange={(e) => setManualTermsAndDepositApproved(e.target.checked)}
+                    className="w-5 h-5 rounded mt-0.5 border-zinc-600 bg-black text-emerald-500 focus:ring-0 cursor-pointer accent-emerald-500 shrink-0"
+                  />
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-heading font-black text-sm text-white uppercase tracking-wide flex items-center gap-1.5">
+                        <CheckCircle2 className={`w-4 h-4 ${manualTermsAndDepositApproved ? 'text-emerald-400' : 'text-zinc-400'}`} />
+                        Términos, condiciones y seña aprobados
+                      </span>
+                      {manualTermsAndDepositApproved && (
+                        <span className="px-2 py-0.5 rounded-md bg-emerald-500 text-black text-[10px] font-black uppercase">
+                          Aprobado
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-400 leading-tight">
+                      Al tildar este casillero, la reserva se creará directamente confirmada y con seña acreditada, reflejándose de inmediato en la tarjeta de reserva del panel.
+                    </p>
+                  </div>
+                </label>
               </div>
 
               <button

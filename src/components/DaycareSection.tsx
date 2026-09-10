@@ -1,6 +1,5 @@
 import React from 'react';
-import { BRAND_INFO } from '../data/initialData';
-import { ShieldCheck, Clock, Smile, MessageCircle, Zap } from 'lucide-react';
+import { ShieldCheck, Clock, Smile, Zap } from 'lucide-react';
 import { DaycareSimulator } from './DaycareSimulator';
 
 export const DaycareSection: React.FC = () => {
@@ -8,7 +7,7 @@ export const DaycareSection: React.FC = () => {
     <section id="up-espacio" className="w-full bg-gradient-to-b from-[#A3BA13] via-[#A3BA13] via-45% to-[#F2C700] text-black py-16 sm:py-24 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="bg-black/60 backdrop-blur-md border-2 border-white/20 rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl text-white">
+        <div className="bg-black/60 backdrop-blur-md border-2 border-white/20 rounded-3xl p-6 sm:p-10 relative overflow-hidden shadow-2xl text-white space-y-8">
           
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             
@@ -53,19 +52,6 @@ export const DaycareSection: React.FC = () => {
                 </div>
               </div>
 
-              {/* CTA */}
-              <div className="pt-2">
-                <a
-                  href={`${BRAND_INFO.whatsappUrl}?text=${encodeURIComponent('Hola! Quisiera consultar disponibilidad y tarifas para el espacio de cuidado UP en El Galpón.')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex bg-[#A3BA13] hover:bg-white hover:text-black text-black font-black text-xs uppercase tracking-wider px-6 py-3.5 rounded-xl transition-all items-center gap-2 shadow-lg cursor-pointer"
-                >
-                  <MessageCircle className="w-5 h-5 text-black" />
-                  <span>Reservar Espacio UP</span>
-                </a>
-              </div>
-
             </div>
 
             {/* Right Feature List Bento Box */}
@@ -106,10 +92,11 @@ export const DaycareSection: React.FC = () => {
             </div>
 
           </div>
-        </div>
 
-        {/* Interactive Pricing Simulator for Espacio UP */}
-        <DaycareSimulator />
+          {/* Interactive Pricing Simulator for Espacio UP seamlessly embedded */}
+          <DaycareSimulator embedded />
+
+        </div>
 
       </div>
     </section>

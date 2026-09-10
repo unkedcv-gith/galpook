@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   PricingSettings, 
   DaycarePricingOption, 
+  DaycareDailyOption,
   BirthdayMonthPrice, 
   BirthdayAdditionalPrice 
 } from '../types';
@@ -11,7 +12,7 @@ import {
   formatCurrency, 
   listenToPricingSettings 
 } from '../services/storage';
-import { INITIAL_PRICING_SETTINGS } from '../data/initialData';
+import { INITIAL_PRICING_SETTINGS, INITIAL_CALLE5_ADDITIONALS, INITIAL_CALLE13_ADDITIONALS } from '../data/initialData';
 import { 
   Tag, 
   Save, 
@@ -37,6 +38,7 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
   const [activeSubSection, setActiveSubSection] = useState<'fitness' | 'daycare' | 'birthdays'>('fitness');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [selectedDayTab, setSelectedDayTab] = useState<number>(5);
+  const [daycareConfigTab, setDaycareConfigTab] = useState<'daily' | 'monthly'>('daily');
 
   useEffect(() => {
     const unsub = listenToPricingSettings((updated) => {
@@ -92,6 +94,31 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
     });
   };
 
+  const handleDaycareDailyRateChange = (hours: number, value: string) => {
+    const num = parseInt(value, 10) || 0;
+    setPricing((prev) => {
+      const currentRates = prev.daycare.dailyRates && prev.daycare.dailyRates.length > 0
+        ? prev.daycare.dailyRates
+        : INITIAL_PRICING_SETTINGS.daycare.dailyRates;
+      const exists = currentRates.some((r) => r.hours === hours);
+      let updatedRates: DaycareDailyOption[];
+      if (exists) {
+        updatedRates = currentRates.map((r) =>
+          r.hours === hours ? { ...r, price: num } : r
+        );
+      } else {
+        updatedRates = [...currentRates, { hours, price: num }];
+      }
+      return {
+        ...prev,
+        daycare: {
+          ...prev.daycare,
+          dailyRates: updatedRates,
+        },
+      };
+    });
+  };
+
   const handleBirthdayDepositChange = (value: string) => {
     setPricing((prev) => ({
       ...prev,
@@ -102,15 +129,61 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
     }));
   };
 
-  const handleBirthdayMonthPriceChange = (monthIndex: number, value: string) => {
+  const [selectedPricingMonthIndex, setSelectedPricingMonthIndex] = useState<number>(0);
+
+  const handleBirthdayMonthBasePriceChange = (monthIndex: number, field: 'basePrice' | 'basePriceCalle5' | 'basePriceCalle13', value: string) => {
     const num = parseInt(value, 10) || 0;
     setPricing((prev) => ({
       ...prev,
       birthdays: {
         ...prev.birthdays,
         monthlyBasePrices: prev.birthdays.monthlyBasePrices.map((m) =>
-          m.monthIndex === monthIndex ? { ...m, basePrice: num } : m
+          m.monthIndex === monthIndex ? { ...m, [field]: num, ...(field === 'basePriceCalle5' ? { basePrice: num } : {}) } : m
         ),
+      },
+    }));
+  };
+
+  const handleMonthAdditionalChange = (monthIndex: number, additionalId: string, field: 'price' | 'description', value: any) => {
+    setPricing((prev) => ({
+      ...prev,
+      birthdays: {
+        ...prev.birthdays,
+        monthlyBasePrices: prev.birthdays.monthlyBasePrices.map((m) => {
+          if (m.monthIndex !== monthIndex) return m;
+          const currentAdditions = m.additionals || pricing.birthdays.additionals || [];
+          const updatedAdditions = currentAdditions.map((a) =>
+            a.id === additionalId
+              ? { ...a, [field]: field === 'price' ? (parseInt(value, 10) || 0) : value }
+              : a
+          );
+          return { ...m, additionals: updatedAdditions };
+        }),
+      },
+    }));
+  };
+
+  const handleBranchMonthAdditionalChange = (monthIndex: number, branch: 'calle-5' | 'calle-13', additionalId: string, field: 'price' | 'description', value: any) => {
+    setPricing((prev) => ({
+      ...prev,
+      birthdays: {
+        ...prev.birthdays,
+        monthlyBasePrices: prev.birthdays.monthlyBasePrices.map((m) => {
+          if (m.monthIndex !== monthIndex) return m;
+          if (branch === 'calle-5') {
+            const currentAdditions = m.additionalsCalle5 || INITIAL_CALLE5_ADDITIONALS;
+            const updated = currentAdditions.map((a) =>
+              a.id === additionalId ? { ...a, [field]: field === 'price' ? (parseInt(value, 10) || 0) : value } : a
+            );
+            return { ...m, additionalsCalle5: updated };
+          } else {
+            const currentAdditions = m.additionalsCalle13 || INITIAL_CALLE13_ADDITIONALS;
+            const updated = currentAdditions.map((a) =>
+              a.id === additionalId ? { ...a, [field]: field === 'price' ? (parseInt(value, 10) || 0) : value } : a
+            );
+            return { ...m, additionalsCalle13: updated };
+          }
+        }),
       },
     }));
   };
@@ -315,91 +388,192 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
           <div className="border-b border-white/10 pb-4 space-y-1">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <h3 className="font-heading text-xl font-black text-white uppercase flex items-center gap-2">
-                <Baby className="w-5 h-5 text-[#A3BA13]" /> Matriz del Simulador Espacio UP
+                <Baby className="w-5 h-5 text-[#A3BA13]" /> Configuración de Tarifas Espacio UP
               </h3>
               <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full bg-[#F2C700] text-black self-start sm:self-auto">
-                Valores Mensuales
+                Por Día & Mensual
               </span>
             </div>
             <p className="text-xs text-zinc-300 font-medium">
-              Ajustá los importes mensuales para cada combinación de días y horas. Los padres verán estos números reflejados en tiempo real en el simulador.
+              Ajustá las tarifas para la modalidad por día (pase diario de 1 a 4/5 horas) y los planes mensuales por semana.
             </p>
           </div>
 
-          {/* Day selection tabs for matrix navigation */}
-          <div className="space-y-2">
-            <span className="text-xs font-black text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-[#A3BA13]" /> Seleccioná la cantidad de días para editar:
-            </span>
-            <div className="grid grid-cols-5 gap-2">
-              {[5, 4, 3, 2, 1].map((d) => (
-                <button
-                  key={`day-tab-${d}`}
-                  type="button"
-                  onClick={() => setSelectedDayTab(d)}
-                  className={`p-3 rounded-xl font-heading font-black text-xs sm:text-sm uppercase transition-all cursor-pointer ${
-                    selectedDayTab === d
-                      ? 'bg-[#A3BA13] text-black shadow-lg scale-102 border-2 border-white'
-                      : 'bg-zinc-900/90 text-zinc-300 hover:bg-zinc-800 border border-white/10'
-                  }`}
-                >
-                  {d} {d === 1 ? 'Día' : 'Días'}
-                </button>
-              ))}
-            </div>
+          {/* Sub-selector: Por Día vs Mensual */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-1.5 bg-black/50 border border-white/10 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => setDaycareConfigTab('daily')}
+              className={`p-3 rounded-xl font-heading font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                daycareConfigTab === 'daily'
+                  ? 'bg-[#A3BA13] text-black shadow-lg scale-[1.01]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+              }`}
+            >
+              <Calendar className="w-4 h-4" />
+              <span>1. Tarifas Por Día (Pase Ocasional)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setDaycareConfigTab('monthly')}
+              className={`p-3 rounded-xl font-heading font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                daycareConfigTab === 'monthly'
+                  ? 'bg-[#F2C700] text-black shadow-lg scale-[1.01]'
+                  : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
+              }`}
+            >
+              <Clock className="w-4 h-4" />
+              <span>2. Tarifas Mensuales (Planes Fijos)</span>
+            </button>
           </div>
 
-          {/* Inputs for currently selected day tab */}
-          <div className="bg-zinc-900/80 border border-white/15 rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h4 className="font-heading font-black text-white text-base uppercase flex items-center gap-2">
-                <Clock className="w-4 h-4 text-[#F2C700]" />
-                <span>Configuración para {selectedDayTab} {selectedDayTab === 1 ? 'día por semana' : 'días por semana'}</span>
-              </h4>
-              <span className="text-xs text-zinc-400 font-medium">
-                {selectedDayTab === 1 ? '5 opciones de permanencia' : '4 opciones de permanencia'}
-              </span>
-            </div>
+          {/* TAB 1: TARIFAS POR DÍA */}
+          {daycareConfigTab === 'daily' && (
+            <div className="bg-zinc-900/80 border border-white/15 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-white/10 pb-3 gap-2">
+                <div>
+                  <h4 className="font-heading font-black text-white text-base uppercase flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#A3BA13]" />
+                    <span>Pase por Día Ocasional (Tarifa Diaria)</span>
+                  </h4>
+                  <p className="text-xs text-zinc-400 font-medium mt-0.5">
+                    Aranceles para un solo día puntual según la cantidad de horas contratadas.
+                  </p>
+                </div>
+                <span className="text-[11px] font-bold text-[#A3BA13] bg-black/60 px-3 py-1 rounded-lg border border-white/10 self-start sm:self-auto">
+                  1 a 4 horas (y 5 hs opcional)
+                </span>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {(selectedDayTab === 1 ? [1, 2, 3, 4, 5] : [1, 2, 3, 4]).map((hours) => {
-                const opt = pricing.daycare.options.find(
-                  (o) => o.days === selectedDayTab && o.hours === hours
-                );
-                const currentVal = opt ? opt.price : 0;
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[1, 2, 3, 4, 5].map((hours) => {
+                  const currentRates = pricing.daycare.dailyRates && pricing.daycare.dailyRates.length > 0
+                    ? pricing.daycare.dailyRates
+                    : INITIAL_PRICING_SETTINGS.daycare.dailyRates;
+                  const rateItem = currentRates.find((r) => r.hours === hours);
+                  const currentVal = rateItem ? rateItem.price : 0;
 
-                return (
-                  <div
-                    key={`opt-${selectedDayTab}-${hours}`}
-                    className="bg-black/60 border border-white/15 rounded-xl p-4 space-y-2 hover:border-[#A3BA13]/40 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-heading font-black text-xs text-white uppercase">
-                        {hours} {hours === 1 ? 'hora diaria' : 'horas diarias'}
-                      </span>
-                      <span className="text-[11px] font-bold text-[#A3BA13]">
-                        {formatCurrency(currentVal)}
-                      </span>
+                  return (
+                    <div
+                      key={`daily-rate-${hours}`}
+                      className="bg-black/60 border border-white/15 rounded-xl p-4 space-y-2 hover:border-[#A3BA13]/40 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-heading font-black text-xs text-white uppercase">
+                          {hours} {hours === 1 ? 'hora en el día' : 'horas en el día'}
+                        </span>
+                        <span className="text-[11px] font-bold text-[#A3BA13]">
+                          {formatCurrency(currentVal)}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-zinc-400 uppercase font-bold">
+                          Precio por Día ($):
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="500"
+                          value={currentVal}
+                          onChange={(e) => handleDaycareDailyRateChange(hours, e.target.value)}
+                          className="w-full bg-zinc-950 border border-white/20 rounded-lg px-3 py-2 text-white font-mono text-sm font-bold focus:outline-hidden focus:border-[#A3BA13]"
+                        />
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
 
-                    <div className="space-y-1">
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold">
-                        Precio Mensual ($):
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1000"
-                        value={currentVal}
-                        onChange={(e) => handleDaycarePriceChange(selectedDayTab, hours, e.target.value)}
-                        className="w-full bg-zinc-950 border border-white/20 rounded-lg px-3 py-2 text-white font-mono text-sm font-bold focus:outline-hidden focus:border-[#A3BA13]"
-                      />
-                    </div>
-                  </div>
-                );
-              })}
+              <div className="bg-black/40 border border-white/10 rounded-xl p-3 text-xs text-zinc-300 space-y-1">
+                <span className="text-[#A3BA13] font-bold block">💡 Nota operativa para el Pase Diario:</span>
+                <p>
+                  Estas tarifas se aplican a familias que asisten por un día específico (por ejemplo: feriados escolares, paros, vacaciones o días imprevistos) sin necesidad de inscribirse en un plan recurrente mensual.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* TAB 2: TARIFAS MENSUALES */}
+          {daycareConfigTab === 'monthly' && (
+            <div className="space-y-5">
+              {/* Day selection tabs for matrix navigation */}
+              <div className="space-y-2">
+                <span className="text-xs font-black text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-[#F2C700]" /> Seleccioná la cantidad de días por semana para editar:
+                </span>
+                <div className="grid grid-cols-5 gap-2">
+                  {[5, 4, 3, 2, 1].map((d) => (
+                    <button
+                      key={`day-tab-${d}`}
+                      type="button"
+                      onClick={() => setSelectedDayTab(d)}
+                      className={`p-3 rounded-xl font-heading font-black text-xs sm:text-sm uppercase transition-all cursor-pointer ${
+                        selectedDayTab === d
+                          ? 'bg-[#F2C700] text-black shadow-lg scale-102 border-2 border-white'
+                          : 'bg-zinc-900/90 text-zinc-300 hover:bg-zinc-800 border border-white/10'
+                      }`}
+                    >
+                      {d} {d === 1 ? 'Día' : 'Días'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Inputs for currently selected day tab */}
+              <div className="bg-zinc-900/80 border border-white/15 rounded-2xl p-5 space-y-4">
+                <div className="flex items-center justify-between border-b border-white/10 pb-3">
+                  <h4 className="font-heading font-black text-white text-base uppercase flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#F2C700]" />
+                    <span>Plan Mensual para {selectedDayTab} {selectedDayTab === 1 ? 'día por semana' : 'días por semana'}</span>
+                  </h4>
+                  <span className="text-xs text-zinc-400 font-medium">
+                    {selectedDayTab === 1 ? '5 opciones de permanencia' : '4 opciones de permanencia'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {(selectedDayTab === 1 ? [1, 2, 3, 4, 5] : [1, 2, 3, 4]).map((hours) => {
+                    const opt = pricing.daycare.options.find(
+                      (o) => o.days === selectedDayTab && o.hours === hours
+                    );
+                    const currentVal = opt ? opt.price : 0;
+
+                    return (
+                      <div
+                        key={`opt-${selectedDayTab}-${hours}`}
+                        className="bg-black/60 border border-white/15 rounded-xl p-4 space-y-2 hover:border-[#F2C700]/40 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-heading font-black text-xs text-white uppercase">
+                            {hours} {hours === 1 ? 'hora diaria' : 'horas diarias'}
+                          </span>
+                          <span className="text-[11px] font-bold text-[#F2C700]">
+                            {formatCurrency(currentVal)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-zinc-400 uppercase font-bold">
+                            Cuota Mensual ($):
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1000"
+                            value={currentVal}
+                            onChange={(e) => handleDaycarePriceChange(selectedDayTab, hours, e.target.value)}
+                            className="w-full bg-zinc-950 border border-white/20 rounded-lg px-3 py-2 text-white font-mono text-sm font-bold focus:outline-hidden focus:border-[#F2C700]"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -437,105 +611,188 @@ export const AdminPricingManager: React.FC<AdminPricingManagerProps> = ({ isSupe
             </div>
           </div>
 
-          {/* Sub-block B: Base Monthly Prices */}
-          <div className="space-y-4 pt-4 border-t border-white/5">
+          {/* Sub-block B: Base Monthly Prices & Month-Specific Additionals */}
+          <div className="space-y-6 pt-4 border-t border-white/5">
             <div className="border-b border-white/10 pb-4 space-y-1">
               <h3 className="font-heading text-xl font-black text-white uppercase flex items-center gap-2">
-                <Cake className="w-5 h-5 text-[#ED3078]" /> Tarifas Base Mensuales de Cumpleaños
+                <Cake className="w-5 h-5 text-[#ED3078]" /> Tarifas y Adicionales por Mes
               </h3>
               <p className="text-xs text-zinc-300 font-medium">
-                En el Paso 2 del proceso de reserva, cuando el cliente elija un mes en el almanaque, se mostrará el valor base configurado aquí para ese mes.
+                Selecciona un mes para configurar su tarifa base diferenciada por sucursal (Calle 5 / Calle 13) y los precios de sus adicionales correspondientes a ese mes.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
-              {pricing.birthdays.monthlyBasePrices.map((m) => (
-                <div
-                  key={`month-${m.monthIndex}`}
-                  className="bg-zinc-900/80 border border-white/15 rounded-2xl p-3.5 space-y-2 hover:border-[#ED3078]/40 transition-all"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-heading font-black text-sm text-white uppercase">
-                      {m.monthName}
-                    </span>
-                    <span className="text-xs font-bold text-[#F2C700] bg-black/60 px-2 py-0.5 rounded-md border border-white/10">
-                      {formatCurrency(m.basePrice)}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-zinc-400 uppercase font-bold">
-                      Tarifa Base ($):
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="5000"
-                      value={m.basePrice}
-                      onChange={(e) => handleBirthdayMonthPriceChange(m.monthIndex, e.target.value)}
-                      className="w-full bg-black/70 border border-white/20 rounded-xl px-3 py-2 text-white font-mono text-sm font-bold focus:outline-hidden focus:border-[#ED3078]"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sub-block B: Additionals */}
-          <div className="space-y-4 pt-4 border-t border-white/10">
-            <div className="border-b border-white/10 pb-3 space-y-1">
-              <h4 className="font-heading text-lg font-black text-white uppercase flex items-center gap-2">
-                <Tag className="w-4 h-4 text-[#1EB8BF]" /> Valores de Adicionales de Cumpleaños
-              </h4>
-              <p className="text-xs text-zinc-300 font-medium">
-                Estos valores se muestran debajo de la tarifa base en el Paso 2 para que los clientes conozcan el costo de superar los 20 chicos base o agregar adultos.
-              </p>
+            {/* Month Selector Tabs */}
+            <div className="flex flex-wrap gap-2 pb-2">
+              {pricing.birthdays.monthlyBasePrices.map((m) => {
+                const isSelected = selectedPricingMonthIndex === m.monthIndex;
+                return (
+                  <button
+                    key={`pricing-month-${m.monthIndex}`}
+                    type="button"
+                    onClick={() => setSelectedPricingMonthIndex(m.monthIndex)}
+                    className={`px-4 py-2.5 rounded-xl font-heading font-black text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                      isSelected
+                        ? 'bg-[#ED3078] text-white shadow-lg shadow-[#ED3078]/30 scale-105'
+                        : 'bg-zinc-900 border border-white/15 text-zinc-300 hover:bg-zinc-800 hover:text-white'
+                    }`}
+                  >
+                    {m.monthName}
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {pricing.birthdays.additionals.map((add) => (
-                <div
-                  key={add.id}
-                  className="bg-zinc-900/80 border border-white/15 rounded-2xl p-4 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-heading font-black text-xs sm:text-sm text-white uppercase">
-                      {add.name}
-                    </span>
-                    <span className="text-xs font-bold text-[#1EB8BF] bg-black/60 px-2.5 py-1 rounded-md border border-white/10">
-                      +{formatCurrency(add.price)}
-                    </span>
+            {/* Selected Month Configuration Panel */}
+            {(() => {
+              const currentMonth = pricing.birthdays.monthlyBasePrices.find((m) => m.monthIndex === selectedPricingMonthIndex) || pricing.birthdays.monthlyBasePrices[0];
+              const monthAdditionals = currentMonth.additionals && currentMonth.additionals.length > 0
+                ? currentMonth.additionals
+                : (pricing.birthdays.additionals || []);
+
+              return (
+                <div className="bg-zinc-900/90 border-2 border-[#ED3078]/40 rounded-3xl p-5 sm:p-6 space-y-6 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-4">
+                    <h4 className="font-heading font-black text-lg text-white uppercase flex items-center gap-2">
+                      <Star className="w-5 h-5 text-[#F2C700]" /> Configuración para el mes de <span className="text-[#F2C700]">{currentMonth.monthName}</span>
+                    </h4>
+                    <span className="text-xs font-bold text-zinc-400">Mes {currentMonth.monthIndex + 1} de 12</span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div className="sm:col-span-1 space-y-1">
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold">
-                        Precio ($):
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1000"
-                        value={add.price}
-                        onChange={(e) => handleBirthdayAdditionalChange(add.id, 'price', e.target.value)}
-                        className="w-full bg-black/70 border border-white/20 rounded-xl px-3 py-2 text-white font-mono text-sm font-bold focus:outline-hidden focus:border-[#1EB8BF]"
-                      />
-                    </div>
-                    <div className="sm:col-span-2 space-y-1">
-                      <label className="text-[10px] text-zinc-400 uppercase font-bold">
-                        Descripción o Rango:
-                      </label>
-                      <input
-                        type="text"
-                        value={add.description}
-                        onChange={(e) => handleBirthdayAdditionalChange(add.id, 'description', e.target.value)}
-                        className="w-full bg-black/70 border border-white/20 rounded-xl px-3 py-2 text-white text-xs font-medium focus:outline-hidden focus:border-[#1EB8BF]"
-                      />
+                  {/* Base Prices per Branch */}
+                  <div className="space-y-3">
+                    <h5 className="font-heading font-black text-sm text-zinc-200 uppercase">Tarifas Base del Mes por Sucursal</h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="bg-black/60 border border-white/10 rounded-2xl p-4 space-y-2">
+                        <label className="text-xs font-bold text-[#ED3078] uppercase flex items-center justify-between">
+                          <span>Calle 5 ($)</span>
+                          <span className="font-mono">{formatCurrency(currentMonth.basePriceCalle5 ?? currentMonth.basePrice)}</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="5000"
+                          value={currentMonth.basePriceCalle5 ?? currentMonth.basePrice}
+                          onChange={(e) => handleBirthdayMonthBasePriceChange(currentMonth.monthIndex, 'basePriceCalle5', e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-white font-mono text-sm font-bold focus:border-[#ED3078]"
+                        />
+                      </div>
+
+                      <div className="bg-black/60 border border-white/10 rounded-2xl p-4 space-y-2">
+                        <label className="text-xs font-bold text-[#1EB8BF] uppercase flex items-center justify-between">
+                          <span>Calle 13 ($)</span>
+                          <span className="font-mono">{formatCurrency(currentMonth.basePriceCalle13 ?? currentMonth.basePrice)}</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="5000"
+                          value={currentMonth.basePriceCalle13 ?? currentMonth.basePrice}
+                          onChange={(e) => handleBirthdayMonthBasePriceChange(currentMonth.monthIndex, 'basePriceCalle13', e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2.5 text-white font-mono text-sm font-bold focus:border-[#1EB8BF]"
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  {/* Month-Specific Additionals Divided by Branch */}
+                  <div className="space-y-6 pt-4 border-t border-white/10">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-heading font-black text-base text-white uppercase flex items-center gap-2">
+                        <Tag className="w-4 h-4 text-[#1EB8BF]" /> Adicionales por Sucursal para {currentMonth.monthName}
+                      </h5>
+                      <span className="text-[10px] text-zinc-400 font-medium">Divididos y no compartidos</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Calle 5 Additionals */}
+                      <div className="bg-black/50 border border-[#ED3078]/30 rounded-2xl p-4 space-y-4">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                          <span className="font-heading font-black text-sm text-[#ED3078] uppercase">Sucursal Calle 5</span>
+                          <span className="text-[10px] bg-[#ED3078]/20 text-[#ED3078] px-2 py-0.5 rounded font-bold">Exclusivo Calle 5</span>
+                        </div>
+                        <div className="space-y-3">
+                          {(currentMonth.additionalsCalle5 || INITIAL_CALLE5_ADDITIONALS).map((add) => (
+                            <div key={add.id} className="bg-zinc-900 border border-white/10 rounded-xl p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-heading font-black text-xs text-white uppercase">{add.name}</span>
+                                <span className="text-xs font-bold text-[#1EB8BF] bg-black px-2 py-0.5 rounded border border-white/10">
+                                  +{formatCurrency(add.price)}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <div className="sm:col-span-1 space-y-1">
+                                  <label className="text-[10px] text-zinc-400 uppercase font-bold">Precio ($):</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="1000"
+                                    value={add.price}
+                                    onChange={(e) => handleBranchMonthAdditionalChange(currentMonth.monthIndex, 'calle-5', add.id, 'price', e.target.value)}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white font-mono text-xs font-bold focus:border-[#ED3078]"
+                                  />
+                                </div>
+                                <div className="sm:col-span-2 space-y-1">
+                                  <label className="text-[10px] text-zinc-400 uppercase font-bold">Descripción:</label>
+                                  <input
+                                    type="text"
+                                    value={add.description}
+                                    onChange={(e) => handleBranchMonthAdditionalChange(currentMonth.monthIndex, 'calle-5', add.id, 'description', e.target.value)}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white text-xs font-medium focus:border-[#ED3078]"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Calle 13 Additionals */}
+                      <div className="bg-black/50 border border-[#1EB8BF]/30 rounded-2xl p-4 space-y-4">
+                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                          <span className="font-heading font-black text-sm text-[#1EB8BF] uppercase">Sucursal Calle 13</span>
+                          <span className="text-[10px] bg-[#1EB8BF]/20 text-[#1EB8BF] px-2 py-0.5 rounded font-bold">Exclusivo Calle 13</span>
+                        </div>
+                        <div className="space-y-3">
+                          {(currentMonth.additionalsCalle13 || INITIAL_CALLE13_ADDITIONALS).map((add) => (
+                            <div key={add.id} className="bg-zinc-900 border border-white/10 rounded-xl p-3 space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="font-heading font-black text-xs text-white uppercase">{add.name}</span>
+                                <span className="text-xs font-bold text-[#1EB8BF] bg-black px-2 py-0.5 rounded border border-white/10">
+                                  +{formatCurrency(add.price)}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <div className="sm:col-span-1 space-y-1">
+                                  <label className="text-[10px] text-zinc-400 uppercase font-bold">Precio ($):</label>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="1000"
+                                    value={add.price}
+                                    onChange={(e) => handleBranchMonthAdditionalChange(currentMonth.monthIndex, 'calle-13', add.id, 'price', e.target.value)}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white font-mono text-xs font-bold focus:border-[#1EB8BF]"
+                                  />
+                                </div>
+                                <div className="sm:col-span-2 space-y-1">
+                                  <label className="text-[10px] text-zinc-400 uppercase font-bold">Descripción:</label>
+                                  <input
+                                    type="text"
+                                    value={add.description}
+                                    onChange={(e) => handleBranchMonthAdditionalChange(currentMonth.monthIndex, 'calle-13', add.id, 'description', e.target.value)}
+                                    className="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-white text-xs font-medium focus:border-[#1EB8BF]"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })()}
           </div>
         </div>
       )}

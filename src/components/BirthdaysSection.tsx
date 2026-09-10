@@ -72,13 +72,13 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
           </div>
 
           <div className="bg-black/60 backdrop-blur-md border-2 border-white/20 hover:border-white/60 p-6 rounded-2xl flex flex-col justify-between space-y-3 shadow-xl transition-all">
-            <div className="w-12 h-12 rounded-2xl bg-zinc-950/60 border border-white/20 flex items-center justify-center text-[#1EB8BF] shadow-xs">
+            <div className="w-12 h-12 rounded-2xl bg-zinc-950/60 border border-white/20 flex items-center justify-center text-white shadow-xs">
               <Users className="w-6 h-6" />
             </div>
             <div>
               <h3 className="font-heading text-xl font-black text-white mb-1 uppercase">Base 20 Chicos / 20 Adultos</h3>
               <p className="text-xs text-zinc-300 font-medium leading-relaxed">
-                Hasta 35 chicos en Calle 13, y hasta 40 en Calle 5. En Calle 5 podés agregar adultos extra, pero en Calle 13 el límite estricto es de 20 adultos.
+                Hasta <span className="text-[#1EB8BF] font-black underline decoration-[#1EB8BF]/60">35 chicos en Calle 13 (Cyan)</span>, y hasta <span className="text-[#ED3078] font-black underline decoration-[#ED3078]/60">40 en Calle 5 (Rosa)</span>. En Calle 5 podés sumar adultos extra; en Calle 13 el límite estricto es de 20 adultos.
               </p>
             </div>
           </div>
@@ -87,7 +87,7 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
               <Laugh className="w-6 h-6 text-[#ED3078]" />
             </div>
             <div>
-              <h3 className="font-heading text-xl font-black text-white mb-1 uppercase">Reloj Loco y Camas Elásticas <span className="text-xs font-black bg-[#ED3078] text-white px-2 py-0.5 rounded-full ml-1 align-middle">CALLE 5</span></h3>
+              <h3 className="font-heading text-xl font-black text-white mb-1 uppercase">Reloj Loco y Camas Elásticas <span className="text-xs font-black bg-[#ED3078] text-white px-2 py-0.5 rounded-full ml-1 align-middle">CALLE 5 • ROSA</span></h3>
               <p className="text-xs text-zinc-300 font-medium leading-relaxed">
                 Nuestra atracción estrella y la más elegida. ¡Poné a prueba tu destreza saltando y esquivando! Disponible exclusivamente en la sucursal de Calle 5.
               </p>
