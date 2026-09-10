@@ -58,7 +58,7 @@ export const BranchComparisonModal: React.FC<BranchComparisonModalProps> = ({ is
                   { name: 'Reloj Loco!! (Atracción Estrella)', c5: true, c13: false },
                   { name: 'Circuitos Deportivos', c5: true, c13: true },
                   { name: 'Videojuegos', c5: true, c13: true },
-                  { name: 'Plaza Blanda (Menores de 5 años)', c5: true, c13: false },
+                  { name: 'Plaza Blanda (Menores de 4 años)', c5: true, c13: false },
                   { name: 'Personal de Cocina y Mozo', c5: true, c13: true },
                   { name: 'Menú Chicos y Adultos de Regalo', c5: true, c13: true },
                   { name: 'Tarjeta Virtual Personalizada', c5: true, c13: true },

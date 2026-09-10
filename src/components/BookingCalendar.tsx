@@ -535,7 +535,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                 <span className="bg-[#ED3078]/20 border border-[#ED3078]/40 px-1.5 py-0.5 rounded text-white font-black">667 MT2</span>
                               </div>
                               <p className="text-[10px] text-[#ED3078] font-black">
-                                ★ INCLUYE RELOJ LOCO Y PLAZA BLANDA (menores 5 años)
+                                ★ INCLUYE RELOJ LOCO Y PLAZA BLANDA (menores 4 años)
                               </p>
                             </>
                           ) : (
@@ -831,7 +831,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                         </li>
                                         <li className="flex items-start gap-1.5">
                                           <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#ED3078]" />
-                                          Plaza blanda (para menores de 5 años)
+                                          Plaza blanda (para menores de 4 años)
                                         </li>
                                       </>
                                     )}
