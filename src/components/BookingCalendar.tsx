@@ -962,36 +962,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     </span>
                   </div>
 
-                  {/* Admin / Franquista Quick Block Toggle */}
-                  {(currentUser?.role === 'admin' || currentUser?.role === 'franquista') && (
-                    <div className="bg-zinc-950 border border-amber-500/40 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
-                      <div className="space-y-0.5">
-                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
-                          Panel de Administración • Franquicia {selectedBranch?.name}
-                        </span>
-                        <p className="text-xs font-bold text-white">
-                          {isDateBlocked ? '🔒 Este día está BLOQUEADO para reservas' : '🟢 Este día está DISPONIBLE para reservas'}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const reason = prompt('Motivo del bloqueo (ej. Evento Privado, Mantenimiento):', 'Mantenimiento / Evento Privado');
-                          if (reason !== null) {
-                            toggleBlockDate(selectedDateStr, reason || 'Bloqueo Admin', selectedBranchId);
-                            loadData();
-                          }
-                        }}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase transition-all cursor-pointer shadow-md shrink-0 ${
-                          isDateBlocked 
-                            ? 'bg-emerald-600 hover:bg-emerald-500 text-white' 
-                            : 'bg-[#ED3078] hover:bg-[#d82469] text-white'
-                        }`}
-                      >
-                        {isDateBlocked ? '🔓 Desbloquear Fecha' : '🔒 Bloquear Fecha'}
-                      </button>
-                    </div>
-                  )}
+
 
                   {isDateBlocked ? (
                     <div className="p-4 bg-zinc-950/80 border-2 border-[#ED3078] rounded-2xl text-center space-y-1">
