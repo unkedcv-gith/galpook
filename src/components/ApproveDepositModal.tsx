@@ -33,7 +33,7 @@ export const ApproveDepositModal: React.FC<ApproveDepositModalProps> = ({
   const formattedDate = formatDateDDMMAAAA(reservation.date);
   const cleanPhone = formatWhatsAppNumber(reservation.parentPhone);
 
-  const rawMessageText = `¡Hola ${reservation.parentName}! 👋 Confirmamos con éxito la reserva para el cumpleaños de *${reservation.childName}* el día *${formattedDate}* (${reservation.slotTime}). Quedamos a disposición para cualquier consulta. ¡Nos vemos pronto para festejar! 🎈`;
+  const rawMessageText = `¡Hola ${reservation.parentName}! 👋 Confirmamos con éxito la reserva para el cumpleaños de *${reservation.childName}* el día *${formattedDate}* (${reservation.slotTime}). En breve te estamos enviando la tarjeta virtual para que puedas compartirla con tus invitados. Quedamos a disposición para cualquier consulta. ¡Nos vemos pronto para festejar! 🎈`;
   const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(rawMessageText)}`;
 
   const handleCopyLink = () => {
