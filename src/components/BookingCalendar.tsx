@@ -35,7 +35,8 @@ import {
   RefreshCw, 
   Info,
   Tag,
-  DollarSign
+  DollarSign,
+  Sparkles
 } from 'lucide-react';
 import { BranchComparisonModal } from './BranchComparisonModal';
 
@@ -578,6 +579,17 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
               {/* Month Navigation & Grid */}
               <div className="max-w-3xl mx-auto space-y-4">
                 
+                {/* 10% Discount & Weekend Pricing Notice Banner */}
+                <div className="bg-gradient-to-r from-amber-500/15 via-[#F2C700]/20 to-amber-500/15 border-2 border-[#F2C700]/60 rounded-2xl p-3.5 sm:p-4 text-center space-y-1 shadow-lg">
+                  <div className="flex items-center justify-center gap-2 text-[#F2C700] font-heading font-black text-xs sm:text-sm uppercase tracking-wide">
+                    <Sparkles className="w-4 h-4 animate-pulse" />
+                    <span>¡10% de Descuento de Lunes a Viernes!</span>
+                  </div>
+                  <p className="text-xs text-zinc-200 font-medium leading-relaxed max-w-xl mx-auto">
+                    De <strong className="text-white">lunes a viernes</strong> tenés un <strong className="text-[#F2C700]">10% de descuento</strong> sobre el contrato base. Sábados, domingos y feriados el valor es el de la placa para los cumpleaños.
+                  </p>
+                </div>
+
                 {/* Month Selector Bar */}
                 <div className="flex items-center justify-between bg-zinc-950/80 border border-white/15 rounded-2xl px-4 py-3">
                   <button
