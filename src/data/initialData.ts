@@ -288,6 +288,14 @@ export const FAQ_ITEMS: FaqItem[] = [
     category: 'cumpleanos',
     highlight: 'Planes de pago flexibles en efectivo',
   },
+  {
+    id: 'faq_9',
+    numberTag: '9',
+    question: '¿Cómo es la climatización de los espacios?',
+    answer: 'En calle 5 sector adultos cuenta con aire acondicionado frio/calor. En calle 13 sector adultos cuenta con ventiladores y hongo calefactor.',
+    category: 'cumpleanos',
+    highlight: 'Climatización en sector adultos',
+  },
 ];
 
 // Helper dates relative to today for dynamic initial demo reservations

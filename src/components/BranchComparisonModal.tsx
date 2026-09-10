@@ -56,7 +56,6 @@ export const BranchComparisonModal: React.FC<BranchComparisonModalProps> = ({ is
                   { name: 'Aro de Acrobacia y Tela', c5: true, c13: true },
                   { name: 'Camas Elásticas', c5: true, c13: false },
                   { name: 'Reloj Loco!! (Atracción Estrella)', c5: true, c13: false },
-                  { name: 'Cancha de Básquet', c5: false, c13: true },
                   { name: 'Circuitos Deportivos', c5: true, c13: true },
                   { name: 'Videojuegos', c5: true, c13: true },
                   { name: 'Plaza Blanda (Menores de 5 años)', c5: true, c13: false },
@@ -65,7 +64,7 @@ export const BranchComparisonModal: React.FC<BranchComparisonModalProps> = ({ is
                   { name: 'Tarjeta Virtual Personalizada', c5: true, c13: true },
                   { name: 'Seguro y Asistencia Médica', c5: true, c13: true },
                   { name: 'WIFI', c5: true, c13: true },
-                  { name: 'Grupo Electrógeno', c5: true, c13: false },
+                  { name: 'Grupo Electrógeno Propio', c5: true, c13: true },
                 ].map((row, i) => (
                   <tr key={i} className="border-b border-white/10 hover:bg-white/5 transition-colors">
                     <td className="p-4">{row.name}</td>

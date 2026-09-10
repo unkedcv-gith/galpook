@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { BirthdaysSection } from './components/BirthdaysSection';
+import { BranchVideosSection } from './components/BranchVideosSection';
 import { WorkshopsSection } from './components/WorkshopsSection';
 import { DaycareSection } from './components/DaycareSection';
 import { FaqSection } from './components/FaqSection';
@@ -162,6 +163,8 @@ export default function App() {
         <BirthdaysSection
           onOpenBooking={handleOpenBooking}
         />
+
+        <BranchVideosSection />
 
         <WorkshopsSection />
 

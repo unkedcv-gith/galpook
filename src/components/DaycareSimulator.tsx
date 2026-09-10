@@ -218,6 +218,16 @@ export const DaycareSimulator: React.FC<DaycareSimulatorProps> = ({ embedded = f
           {/* CASO 1: SIMULACIÓN POR DÍA */}
           {simulationMode === 'daily' && (
             <div className="space-y-4">
+              {/* Paro en el cole callout */}
+              <div className="bg-zinc-950/80 border border-white/20 rounded-2xl p-3.5 sm:p-4 space-y-1.5 shadow-inner">
+                <div className="text-[#ED3078] font-heading font-black text-sm sm:text-base flex items-center gap-2 uppercase">
+                  <Zap className="w-5 h-5 text-[#F2C700] shrink-0" /> ¿Hay paro en el cole o no tenés quien cuide a tu peke?
+                </div>
+                <p className="text-xs text-zinc-300 font-medium leading-relaxed">
+                  ¡Traélo a El Galpón! Mucha diversión asegurada en un solo lugar adaptado con docentes calificados y actividades saludables.
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">

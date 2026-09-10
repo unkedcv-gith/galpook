@@ -29,16 +29,6 @@ export const DaycareSection: React.FC = () => {
                 Un espacio donde tu peke juega, se mueve, crea y se divierte mientras vos hacés lo que necesitás.
               </p>
 
-              {/* Paro en el cole callout */}
-              <div className="bg-zinc-950/60 border border-white/20 rounded-2xl p-4 space-y-1.5 shadow-inner">
-                <div className="text-[#ED3078] font-heading font-black text-base flex items-center gap-2 uppercase">
-                  <Zap className="w-5 h-5 text-[#F2C700]" /> ¿Hay paro en el cole o no tenés quien cuide a tu peke?
-                </div>
-                <p className="text-xs text-zinc-300 font-medium">
-                  ¡Traélo a El Galpón! Mucha diversión asegurada en un solo lugar adaptado con docentes calificados y actividades saludables.
-                </p>
-              </div>
-
               {/* Highlights Pill Row */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
                 <div className="bg-zinc-950/60 p-3 rounded-xl border border-white/20 text-xs text-white font-black flex items-center gap-2">

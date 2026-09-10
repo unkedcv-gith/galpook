@@ -45,6 +45,8 @@ export const FloatingChatbot: React.FC = () => {
         botResponse = 'UP es nuestro espacio de cuidado y actividades deportivas. Ideal si hay paro o necesitás hacer algo. De lunes a viernes de 7:30 a 17:00 hs.';
       } else if (lowerText.includes('sucursal') || lowerText.includes('direccion') || lowerText.includes('donde')) {
         botResponse = 'Tenemos dos sucursales en La Plata: "El Galpón Calle 5" y "El Galpón Calle 13". Cada una tiene juegos diferentes como Muro de Escalada y Camas Elásticas.';
+      } else if (lowerText.includes('clima') || lowerText.includes('aire') || lowerText.includes('calefacc') || lowerText.includes('frio') || lowerText.includes('calor') || lowerText.includes('ventilador')) {
+        botResponse = 'En Calle 5 el sector adultos cuenta con aire acondicionado frío/calor. En Calle 13 el sector adultos cuenta con ventiladores y hongo calefactor.';
       } else {
         botResponse = '¡Entiendo! Para darte una respuesta más precisa o consultar disponibilidad, te recomiendo hablar con una persona de nuestro equipo en WhatsApp.';
       }

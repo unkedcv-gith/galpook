@@ -176,9 +176,12 @@ export const Hero: React.FC<HeroProps> = ({ onOpenBooking }) => {
         >
         </video>
 
-        {/* Minimal soft vignette overlay for crisp legibility without darkening video */}
-        <div className="absolute inset-0 bg-black/25 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-black/40 pointer-events-none" />
+        {/* Minimal soft vignette overlay for crisp legibility */}
+        <div className="absolute inset-0 bg-black/20 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 via-40% to-black/30 pointer-events-none" />
+        
+        {/* Seamless bottom fade into pure black matching the next section's top background */}
+        <div className="absolute bottom-0 inset-x-0 h-36 sm:h-52 lg:h-64 bg-gradient-to-b from-transparent via-black/70 to-black pointer-events-none" />
       </div>
 
       {/* Foreground Content Container */}

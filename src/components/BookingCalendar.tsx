@@ -823,7 +823,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                       <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
                                       Aro de acrobacia y Tela
                                     </li>
-                                    {isCalle5 ? (
+                                    {isCalle5 && (
                                       <>
                                         <li className="flex items-start gap-1.5 font-bold text-white">
                                           <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#ED3078]" />
@@ -833,16 +833,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                           <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#ED3078]" />
                                           Plaza blanda (para menores de 5 años)
                                         </li>
-                                        <li className="flex items-start gap-1.5">
-                                          <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#ED3078]" />
-                                          Grupo electrógeno propio
-                                        </li>
                                       </>
-                                    ) : (
-                                      <li className="flex items-start gap-1.5 font-bold text-white">
-                                        <CheckCircle2 className="w-3 h-3 shrink-0 mt-0.5 text-[#1EB8BF]" />
-                                        Cancha de Básquetbol (Exclusivo Calle 13)
-                                      </li>
                                     )}
                                     <li className="flex items-start gap-1.5">
                                       <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
@@ -855,6 +846,10 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                     <li className="flex items-start gap-1.5">
                                       <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
                                       Tarjeta virtual personalizada, seguro y asistencia médica, WiFi
+                                    </li>
+                                    <li className="flex items-start gap-1.5 font-bold text-white">
+                                      <CheckCircle2 className={`w-3 h-3 shrink-0 mt-0.5 ${isCalle5 ? 'text-[#ED3078]' : 'text-[#1EB8BF]'}`} />
+                                      Grupo electrógeno propio
                                     </li>
                                   </ul>
                                 </div>

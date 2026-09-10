@@ -13,7 +13,6 @@ import {
   Flame,
   Laugh,
 } from 'lucide-react';
-import { AttractionsGallery } from './AttractionsGallery';
 
 interface BirthdaysSectionProps {
   onOpenBooking: () => void;
@@ -184,9 +183,6 @@ export const BirthdaysSection: React.FC<BirthdaysSectionProps> = ({
               );
             })}
           </div>
-
-          {/* Dynamic Slow Scrolling Photo Gallery */}
-          <AttractionsGallery />
         </div>
 
       </div>
