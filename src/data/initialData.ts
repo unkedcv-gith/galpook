@@ -29,11 +29,11 @@ export const BRAND_INFO = {
 };
 
 export const DEFAULT_BANK_INFO = {
-  bankName: 'Banco Galicia / Mercado Pago',
-  accountHolder: 'El Galpón Recreativo S.R.L.',
-  cuit: '30-71689452-3',
-  cbu: '0070123430004567890123',
-  alias: 'ELGALPON.FESTEJOS',
+  bankName: 'Mercado Pago',
+  accountHolder: 'Romina Finocchi',
+  cuit: '',
+  cbu: '',
+  alias: 'elgalpon.5',
   depositAmount: 100000,
 };
 

@@ -1298,13 +1298,19 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
                     </div>
                   </div>
 
+                  {/* Non-refundable deposit warning */}
+                  <div className="bg-red-950/40 border border-red-500/50 rounded-2xl p-4 text-red-200 text-xs sm:text-sm font-black flex items-center gap-3">
+                    <span className="text-base sm:text-lg">❌</span>
+                    <span>La seña no tiene devolución.</span>
+                  </div>
+
                   {/* Bank Details Box with Copy Buttons */}
                   <div className="bg-black/80 border border-zinc-800 rounded-2xl p-4 sm:p-5 space-y-4">
                     <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
                       <div className="flex items-center gap-2">
                         <Building2 className="w-4 h-4 text-[#1EB8BF]" />
                         <h4 className="font-heading font-black text-sm sm:text-base text-white uppercase">
-                          Datos de la Cuenta Bancaria para la Seña
+                          💳 Datos para la transferencia
                         </h4>
                       </div>
                       <div className="text-right">
@@ -1332,27 +1338,29 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
                         </button>
                       </div>
 
-                      {/* CBU */}
-                      <div className="flex items-center justify-between gap-2 p-2.5 bg-zinc-900/80 rounded-xl border border-zinc-800">
-                        <div>
-                          <span className="text-zinc-500 block text-[10px] uppercase font-bold">CBU</span>
-                          <strong className="text-zinc-300 font-mono text-xs select-all break-all">{DEFAULT_BANK_INFO.cbu}</strong>
+                      {/* CBU if present */}
+                      {DEFAULT_BANK_INFO.cbu && (
+                        <div className="flex items-center justify-between gap-2 p-2.5 bg-zinc-900/80 rounded-xl border border-zinc-800">
+                          <div>
+                            <span className="text-zinc-500 block text-[10px] uppercase font-bold">CBU</span>
+                            <strong className="text-zinc-300 font-mono text-xs select-all break-all">{DEFAULT_BANK_INFO.cbu}</strong>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(DEFAULT_BANK_INFO.cbu, 'cbu')}
+                            className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                          >
+                            {copiedField === 'cbu' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                            <span>{copiedField === 'cbu' ? '¡Copiado!' : 'Copiar CBU'}</span>
+                          </button>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(DEFAULT_BANK_INFO.cbu, 'cbu')}
-                          className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                        >
-                          {copiedField === 'cbu' ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-                          <span>{copiedField === 'cbu' ? '¡Copiado!' : 'Copiar CBU'}</span>
-                        </button>
-                      </div>
+                      )}
 
                       {/* Holder & Bank */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-[11px] text-zinc-400">
                         <div>Titular: <strong className="text-zinc-200">{DEFAULT_BANK_INFO.accountHolder}</strong></div>
-                        <div>CUIT: <strong className="text-zinc-200">{DEFAULT_BANK_INFO.cuit}</strong></div>
-                        <div className="sm:col-span-2">Banco: <strong className="text-zinc-200">{DEFAULT_BANK_INFO.bankName}</strong></div>
+                        {DEFAULT_BANK_INFO.cuit && <div>CUIT: <strong className="text-zinc-200">{DEFAULT_BANK_INFO.cuit}</strong></div>}
+                        <div className="sm:col-span-2">Método / Banco: <strong className="text-zinc-200">{DEFAULT_BANK_INFO.bankName}</strong></div>
                       </div>
                     </div>
                   </div>

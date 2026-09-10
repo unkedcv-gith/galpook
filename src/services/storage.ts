@@ -5,7 +5,8 @@ import {
   INITIAL_BRANCHES, 
   INITIAL_USERS, 
   INITIAL_INQUIRIES,
-  INITIAL_PRICING_SETTINGS
+  INITIAL_PRICING_SETTINGS,
+  DEFAULT_BANK_INFO
 } from '../data/initialData';
 import { db } from './firebase';
 import { 
@@ -935,14 +936,14 @@ export const generateWaiverWhatsAppMessage = (reservation: Reservation): string 
 
 export const generateDepositRequestWhatsAppMessage = (
   reservation: Reservation,
-  bankAlias: string = 'ELGALPON.FESTEJOS',
-  bankCbu: string = '0070123430004567890123',
+  bankAlias: string = DEFAULT_BANK_INFO.alias,
+  bankCbu: string = DEFAULT_BANK_INFO.cbu,
   depositAmount: number = getPricingSettings().birthdays.depositAmount
 ): string => {
   const cleanPhone = formatWhatsAppNumber(reservation.parentPhone);
   const formattedDate = formatDateDDMMAAAA(reservation.date);
   
-  const text = `¡Hola *${reservation.parentName}*! 👋\n\nTe confirmamos la *recepción de tu pedido de reserva* para el cumpleaños de *${reservation.childName}* (${reservation.childAge} años) en *${reservation.branchName}* 🎪🎉:\n\n📅 *Fecha:* ${formattedDate}\n⏰ *Turno:* ${reservation.slotTime}\n👥 *Chicos estimados:* ${reservation.estimatedKids} invitados\n\nPara confirmar definitivamente la fecha en el calendario y reservar el salón en exclusividad, se debe realizar una seña de *$${depositAmount.toLocaleString('es-AR')}*:\n\n🏦 *DATOS PARA LA TRANSFERENCIA:*\n• *Titular:* El Galpón Recreativo S.R.L.\n• *Alias:* ${bankAlias}\n• *CBU:* ${bankCbu}\n• *Monto Seña:* $${depositAmount.toLocaleString('es-AR')}\n\n⚠️ *IMPORTANTE:* Una vez realizada la transferencia, *por favor envíanos el comprobante por este mismo chat de WhatsApp* para registrar la confirmación en el sistema y remitirte el formulario de habilitación/deslinde.\n\n¡Muchas gracias! Quedamos a la espera de tu comprobante. 🎈`;
+  const text = `¡Hola *${reservation.parentName}*! 👋\n\nTe confirmamos la *recepción de tu pedido de reserva* para el cumpleaños de *${reservation.childName}* (${reservation.childAge} años) en *${reservation.branchName}* 🎪🎉:\n\n📅 *Fecha:* ${formattedDate}\n⏰ *Turno:* ${reservation.slotTime}\n👥 *Chicos estimados:* ${reservation.estimatedKids} invitados\n\nPara confirmar definitivamente la fecha en el calendario y reservar el salón en exclusividad, se debe realizar una seña de *$${depositAmount.toLocaleString('es-AR')}*:\n\n❌ *La seña no tiene devolución.*\n\n💳 *DATOS PARA LA TRANSFERENCIA:*\n• *Titular:* ${DEFAULT_BANK_INFO.accountHolder}\n• *Alias:* ${DEFAULT_BANK_INFO.alias}${bankCbu ? `\n• *CBU:* ${bankCbu}` : ''}\n• *Monto Seña:* $${depositAmount.toLocaleString('es-AR')}\n\n⚠️ *IMPORTANTE:* Una vez realizada la transferencia, *por favor envíanos el comprobante por este mismo chat de WhatsApp* para registrar la confirmación en el sistema y remitirte el formulario de habilitación/deslinde.\n\n¡Muchas gracias! Quedamos a la espera de tu comprobante. 🎈`;
 
   return `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
 };
