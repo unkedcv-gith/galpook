@@ -41,8 +41,8 @@ export const FloatingChatbot: React.FC = () => {
         botResponse = 'Nuestros cumples son para chicos de 6 a 12 años, duran 2 horas y media y son súper activos. Base 20 chicos, máximo hasta 35 (o 40 según la sucursal).';
       } else if (lowerText.includes('talleres') || lowerText.includes('fitness') || lowerText.includes('pekes') || lowerText.includes('cross')) {
         botResponse = 'Tenemos FITNESS dividido en: Pekes en Acción (3 a 6 años) y Crossteens (7 a 11 años). ¿Te paso horarios por WhatsApp?';
-      } else if (lowerText.includes('up') || lowerText.includes('cuidado') || lowerText.includes('dia')) {
-        botResponse = 'UP es nuestro espacio de cuidado y actividades deportivas. Ideal si hay paro o necesitás hacer algo. De lunes a viernes de 7:30 a 17:00 hs.';
+      } else if (lowerText.includes('up') || lowerText.includes('cuidado') || lowerText.includes('dia') || lowerText.includes('bebe')) {
+        botResponse = 'UP es nuestro espacio de cuidado y actividades deportivas para bebés desde 45 días hasta chicos de 11 años. Para los más bebés brindamos máxima dedicación, contención y cuidados en cada detalle; y para los más grandes, actividades recreativas y deportivas. De lunes a viernes de 7:30 a 17:00 hs.';
       } else if (lowerText.includes('sucursal') || lowerText.includes('direccion') || lowerText.includes('donde')) {
         botResponse = 'Tenemos dos sucursales en La Plata: "El Galpón Calle 5" y "El Galpón Calle 13". Cada una tiene juegos diferentes como Muro de Escalada y Camas Elásticas.';
       } else if (lowerText.includes('clima') || lowerText.includes('aire') || lowerText.includes('calefacc') || lowerText.includes('frio') || lowerText.includes('calor') || lowerText.includes('ventilador')) {

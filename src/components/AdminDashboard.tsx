@@ -331,11 +331,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   };
 
   const handleUnlockUser = async (uid: string, name: string) => {
-    if (window.confirm(`¿Confirmás el desbloqueo del usuario "${name}"? Se reestablecerá el contador de 5 intentos fallidos a cero.`)) {
-      await unlockAppUser(uid);
-      loadData();
-      alert(`El usuario "${name}" ha sido desbloqueado exitosamente.`);
-    }
+    await unlockAppUser(uid);
+    loadData();
   };
 
   // Role permissions helpers - Both Dueño General (admin) and superadmin have full access
@@ -519,10 +516,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('¿Estás seguro de eliminar esta reserva?')) {
-      const updated = await deleteReservation(id);
-      setReservations(updated);
-    }
+    const updated = await deleteReservation(id);
+    setReservations(updated);
   };
 
   const handleToggleBlock = (e: React.FormEvent) => {
@@ -541,7 +536,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
       date: blockType === 'single_day' ? blockDateStr : undefined,
       startDate: blockType === 'date_range' ? blockStartDate : undefined,
       endDate: blockType === 'date_range' ? blockEndDate : undefined,
-      year: blockType === 'full_month' ? blockYear : undefined,
+      year: (blockType === 'full_month' || blockType === 'full_year') ? blockYear : undefined,
       monthIndex: blockType === 'full_month' ? blockMonthIndex : undefined,
     });
     setCalendarBlocks(getCalendarBlocks());
@@ -550,11 +545,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
   };
 
   const handleRemoveCalendarBlock = async (id: string) => {
-    if (confirm('¿Estás seguro de eliminar este bloqueo del calendario?')) {
-      await removeCalendarBlock(id);
-      setCalendarBlocks(getCalendarBlocks());
-      setBlockedDates(getBlockedDates());
-    }
+    await removeCalendarBlock(id);
+    setCalendarBlocks(getCalendarBlocks());
+    setBlockedDates(getBlockedDates());
   };
 
   const handleCreateManual = async (e: React.FormEvent) => {
@@ -1767,7 +1760,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       }`}>
                         <MapPin className="w-3 h-3" /> {inq.branchName}
                       </span>
-                      <span className="text-xs text-zinc-400 font-medium">{new Date(inq.createdAt).toLocaleDateString('es-ES')}</span>
+                      <span className="text-xs text-zinc-400 font-medium">{formatDateDDMMAAAA(inq.createdAt)}</span>
                     </div>
 
                     <div>
@@ -1830,6 +1823,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                     <option value="single_day">Día Específico</option>
                     <option value="date_range">Rango de Fechas (Período)</option>
                     <option value="full_month">Mes Completo</option>
+                    <option value="full_year">Año Completo</option>
                   </select>
                 </div>
 
@@ -1897,11 +1891,26 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                         onChange={(e) => setBlockYear(Number(e.target.value))}
                         className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
                       >
-                        {[2026, 2027, 2028, 2029].map((yr) => (
+                        {[2026, 2027, 2028, 2029, 2030].map((yr) => (
                           <option key={yr} value={yr}>{yr}</option>
                         ))}
                       </select>
                     </div>
+                  </div>
+                )}
+
+                {blockType === 'full_year' && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-zinc-300 uppercase">Año *</label>
+                    <select
+                      value={blockYear}
+                      onChange={(e) => setBlockYear(Number(e.target.value))}
+                      className="w-full bg-black border border-zinc-700 rounded-xl px-3 py-2.5 text-xs text-white"
+                    >
+                      {[2026, 2027, 2028, 2029, 2030, 2031].map((yr) => (
+                        <option key={yr} value={yr}>{yr}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
@@ -1937,24 +1946,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <span className="bg-[#ED3078]/20 text-[#ED3078] text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
-                            {b.type === 'single_day' ? 'Día Específico' : b.type === 'date_range' ? 'Rango de Fechas' : 'Mes Completo'}
+                            {b.type === 'single_day' ? 'Día Específico' : b.type === 'date_range' ? 'Rango de Fechas' : b.type === 'full_month' ? 'Mes Completo' : 'Año Completo'}
                           </span>
                           <span className="text-zinc-400 text-xs font-bold">
                             {b.branchName || (b.branchId === 'all' ? 'Todas las Sucursales' : b.branchId)}
                           </span>
                         </div>
                         <p className="text-xs font-black text-white">
-                          {b.type === 'single_day' && `Fecha: ${b.date}`}
-                          {b.type === 'date_range' && `Desde ${b.startDate} hasta ${b.endDate}`}
+                          {b.type === 'single_day' && `Fecha: ${formatDateDDMMAAAA(b.date || '')}`}
+                          {b.type === 'date_range' && `Desde ${formatDateDDMMAAAA(b.startDate || '')} hasta ${formatDateDDMMAAAA(b.endDate || '')}`}
                           {b.type === 'full_month' && `Mes: ${b.monthName || b.monthKey}`}
+                          {b.type === 'full_year' && `Año Completo: ${b.year}`}
                         </p>
                         <p className="text-[11px] text-zinc-400">Motivo: {b.reason}</p>
                       </div>
                       <button
                         onClick={() => handleRemoveCalendarBlock(b.id)}
-                        className="px-3 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-xs font-bold text-red-400 transition-colors cursor-pointer shrink-0"
+                        className="px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-bold text-emerald-400 flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-sm"
+                        title="Desbloquear y liberar fecha en el calendario"
                       >
-                        Desbloquear
+                        <Unlock className="w-3.5 h-3.5" />
+                        <span>Desbloquear</span>
                       </button>
                     </div>
                   ))}
@@ -2561,7 +2573,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
                   <Clock className="w-4 h-4 text-zinc-500" />
                   <span>
                     {lastBackupTime
-                      ? new Date(lastBackupTime).toLocaleDateString('es-AR') + ' ' + new Date(lastBackupTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+                      ? formatDateDDMMAAAA(lastBackupTime) + ' ' + new Date(lastBackupTime).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
                       : 'Aún no realizado'}
                   </span>
                 </div>

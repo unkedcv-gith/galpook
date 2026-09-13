@@ -129,7 +129,7 @@ export interface TimeSlot {
   description: string;
 }
 
-export type CalendarBlockType = 'single_day' | 'date_range' | 'full_month';
+export type CalendarBlockType = 'single_day' | 'date_range' | 'full_month' | 'full_year';
 
 export interface CalendarBlock {
   id: string;

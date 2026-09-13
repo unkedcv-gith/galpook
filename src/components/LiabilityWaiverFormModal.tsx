@@ -1197,7 +1197,7 @@ export const LiabilityWaiverFormModal: React.FC<LiabilityWaiverFormModalProps> =
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-zinc-400 font-medium pt-1">
                       <span>Aclaración: <strong>{signerFullName || 'Nombre Titular'}</strong> (DNI: {signerDni || '---'})</span>
-                      <span>Fecha: {new Date().toLocaleDateString('es-AR')}</span>
+                      <span>Fecha: {formatDateDDMMAAAA(new Date().toISOString())}</span>
                     </div>
                   </div>
 

@@ -1,4 +1,4 @@
-import { Reservation, BlockedDate, Branch, AppUser, Inquiry, UserRole, LiabilityWaiver, PricingSettings, BirthdayAdditionalPrice, BirthdayMonthPrice, CalendarBlock, CalendarBlockType } from '../types';
+import { Reservation, BlockedDate, Branch, AppUser, Inquiry, UserRole, LiabilityWaiver, PricingSettings, BirthdayAdditionalPrice, BirthdayMonthPrice, CalendarBlock, CalendarBlockType, DaycareDailyOption } from '../types';
 import { 
   INITIAL_RESERVATIONS, 
   INITIAL_BLOCKED_DATES, 
@@ -6,6 +6,9 @@ import {
   INITIAL_USERS, 
   INITIAL_INQUIRIES,
   INITIAL_PRICING_SETTINGS,
+  INITIAL_CALLE5_ADDITIONALS,
+  INITIAL_CALLE13_ADDITIONALS,
+  INITIAL_BIRTHDAY_MONTHS,
   DEFAULT_BANK_INFO
 } from '../data/initialData';
 import { db } from './firebase';
@@ -648,24 +651,40 @@ export const deleteReservation = async (id: string): Promise<Reservation[]> => {
 // -------------------------------------------------------------
 // DATE FORMATTING HELPERS (dd/mm/aaaa)
 // -------------------------------------------------------------
-export const formatDateDDMMAAAA = (dateStr: string): string => {
-  if (!dateStr) return '';
-  const parts = dateStr.split('-');
-  if (parts.length === 3 && parts[0].length === 4) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+export const formatDateDDMMAAAA = (dateInput: string | Date | undefined | null): string => {
+  if (!dateInput) return '';
+  if (typeof dateInput === 'string') {
+    // If format is already DD/MM/AAAA or similar with slashes
+    if (dateInput.includes('/')) return dateInput;
+    // Extract YYYY-MM-DD from string (handles 'YYYY-MM-DD' and 'YYYY-MM-DDTHH:mm:ss...')
+    const cleanDate = dateInput.includes('T') ? dateInput.split('T')[0] : dateInput;
+    const parts = cleanDate.split('-');
+    if (parts.length === 3 && parts[0].length === 4) {
+      return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+    }
   }
-  return dateStr;
+  try {
+    const d = new Date(dateInput);
+    if (!isNaN(d.getTime())) {
+      const day = String(d.getDate()).padStart(2, '0');
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${day}/${month}/${year}`;
+    }
+  } catch {}
+  return String(dateInput);
 };
 
 export const formatDateWithWeekday = (dateStr: string): string => {
   if (!dateStr) return '';
   try {
-    const parts = dateStr.split('-');
-    if (parts.length !== 3) return dateStr;
+    const cleanDate = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const parts = cleanDate.split('-');
+    if (parts.length !== 3) return formatDateDDMMAAAA(dateStr);
     const y = parseInt(parts[0], 10);
     const m = parseInt(parts[1], 10);
     const d = parseInt(parts[2], 10);
-    if (!y || !m || !d) return dateStr;
+    if (!y || !m || !d) return formatDateDDMMAAAA(dateStr);
     const dateObj = new Date(y, m - 1, d, 12, 0, 0);
     const weekday = dateObj.toLocaleDateString('es-AR', { weekday: 'short' });
     const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1).replace('.', '');
@@ -1013,17 +1032,32 @@ export const MONTH_NAMES_ES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
+const toSimpleDateString = (str?: string): string => {
+  if (!str) return '';
+  let s = String(str).trim();
+  if (s.includes('T')) {
+    s = s.split('T')[0];
+  }
+  return s;
+};
+
 export const expandDatesFromRange = (startDate: string, endDate: string): string[] => {
   if (!startDate || !endDate) return [];
+  const sStart = toSimpleDateString(startDate);
+  const sEnd = toSimpleDateString(endDate);
+  if (!sStart || !sEnd) return [];
+  const minDate = sStart <= sEnd ? sStart : sEnd;
+  const maxDate = sStart <= sEnd ? sEnd : sStart;
+
   const dates: string[] = [];
-  const curr = new Date(startDate + 'T00:00:00');
-  const end = new Date(endDate + 'T00:00:00');
-  if (isNaN(curr.getTime()) || isNaN(end.getTime()) || curr > end) {
-    return [startDate];
+  const curr = new Date(minDate + 'T00:00:00');
+  const end = new Date(maxDate + 'T00:00:00');
+  if (isNaN(curr.getTime()) || isNaN(end.getTime())) {
+    return [minDate];
   }
-  // Cap at max 400 days to prevent runaway loops
+  // Cap at max 10000 days to support long ranges (up to ~27 years)
   let guard = 0;
-  while (curr <= end && guard < 400) {
+  while (curr <= end && guard < 10000) {
     const y = curr.getFullYear();
     const m = String(curr.getMonth() + 1).padStart(2, '0');
     const d = String(curr.getDate()).padStart(2, '0');
@@ -1160,6 +1194,8 @@ export const isDateBlocked = (
   branchId?: string
 ): { isBlocked: boolean; reason: string; block?: CalendarBlock } => {
   if (!dateStr) return { isBlocked: false, reason: '' };
+  const targetDate = toSimpleDateString(dateStr);
+  if (!targetDate) return { isBlocked: false, reason: '' };
   const blocks = getCalendarBlocks();
 
   for (const block of blocks) {
@@ -1174,7 +1210,8 @@ export const isDateBlocked = (
 
     // 1. Single Day
     if (block.type === 'single_day') {
-      if (block.date === dateStr) {
+      const bDate = toSimpleDateString(block.date);
+      if (bDate && bDate === targetDate) {
         return { 
           isBlocked: true, 
           reason: block.reason || 'Fecha bloqueada por la administración', 
@@ -1184,17 +1221,23 @@ export const isDateBlocked = (
     }
     // 2. Date Range
     else if (block.type === 'date_range') {
-      if (block.startDate && block.endDate && dateStr >= block.startDate && dateStr <= block.endDate) {
-        return { 
-          isBlocked: true, 
-          reason: block.reason || 'Período bloqueado por la administración', 
-          block 
-        };
+      const start = toSimpleDateString(block.startDate);
+      const end = toSimpleDateString(block.endDate);
+      if (start && end) {
+        const minDate = start <= end ? start : end;
+        const maxDate = start <= end ? end : start;
+        if (targetDate >= minDate && targetDate <= maxDate) {
+          return { 
+            isBlocked: true, 
+            reason: block.reason || 'Período bloqueado por la administración', 
+            block 
+          };
+        }
       }
     }
     // 3. Full Month
     else if (block.type === 'full_month') {
-      const ym = dateStr.substring(0, 7);
+      const ym = targetDate.substring(0, 7);
       if (block.monthKey && ym === block.monthKey) {
         return { 
           isBlocked: true, 
@@ -1203,16 +1246,29 @@ export const isDateBlocked = (
         };
       }
       if (block.year !== undefined && block.monthIndex !== undefined) {
-        const [yStr, mStr] = dateStr.split('-');
-        const y = Number(yStr);
-        const m = Number(mStr);
-        if (y === block.year && m === block.monthIndex + 1) {
-          return { 
-            isBlocked: true, 
-            reason: block.reason || 'Mes bloqueado por la administración', 
-            block 
-          };
+        const parts = targetDate.split('-');
+        if (parts.length >= 2) {
+          const y = Number(parts[0]);
+          const m = Number(parts[1]);
+          if (y === block.year && m === block.monthIndex + 1) {
+            return { 
+              isBlocked: true, 
+              reason: block.reason || 'Mes bloqueado por la administración', 
+              block 
+            };
+          }
         }
+      }
+    }
+    // 4. Full Year
+    else if (block.type === 'full_year') {
+      const y = Number(targetDate.substring(0, 4));
+      if (block.year !== undefined && y === block.year) {
+        return { 
+          isBlocked: true, 
+          reason: block.reason || 'Año completo bloqueado por la administración', 
+          block 
+        };
       }
     }
   }
@@ -1227,6 +1283,9 @@ export const isMonthBlocked = (
 ): { isBlocked: boolean; reason: string; block?: CalendarBlock } => {
   const blocks = getCalendarBlocks();
   const targetKey = `${year}-${String(monthIndex + 1).padStart(2, '0')}`;
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const monthStart = `${targetKey}-01`;
+  const monthEnd = `${targetKey}-${String(daysInMonth).padStart(2, '0')}`;
 
   for (const block of blocks) {
     const branchMatch = 
@@ -1244,6 +1303,28 @@ export const isMonthBlocked = (
           reason: block.reason || 'Mes completo bloqueado por la administración', 
           block 
         };
+      }
+    } else if (block.type === 'full_year') {
+      if (block.year === year) {
+        return {
+          isBlocked: true,
+          reason: block.reason || 'Año completo bloqueado por la administración',
+          block
+        };
+      }
+    } else if (block.type === 'date_range') {
+      const start = toSimpleDateString(block.startDate);
+      const end = toSimpleDateString(block.endDate);
+      if (start && end) {
+        const minDate = start <= end ? start : end;
+        const maxDate = start <= end ? end : start;
+        if (minDate <= monthStart && maxDate >= monthEnd) {
+          return {
+            isBlocked: true,
+            reason: block.reason || 'Período bloqueado por la administración',
+            block
+          };
+        }
       }
     }
   }
@@ -1305,6 +1386,25 @@ export const getBlockedDates = (branchId?: string): BlockedDate[] => {
             reason: b.reason,
             createdAt: b.createdAt,
           });
+        }
+      }
+    } else if (b.type === 'full_year' && b.year !== undefined) {
+      for (let mIdx = 0; mIdx < 12; mIdx++) {
+        const days = expandDatesFromMonth(b.year, mIdx);
+        for (const d of days) {
+          const key = `${d}_${bId}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push({
+              id: `${b.id}_${d}`,
+              blockId: b.id,
+              blockType: 'full_year',
+              branchId: bId,
+              date: d,
+              reason: b.reason,
+              createdAt: b.createdAt,
+            });
+          }
         }
       }
     }
@@ -1526,6 +1626,71 @@ export const listenToFirestoreBookings = (onUpdate?: (bookings: Reservation[]) =
   }
 };
 
+// Helper to normalize and ensure full data integrity for PricingSettings across all 12 months
+export const normalizePricingSettings = (parsed?: any): PricingSettings => {
+  if (!parsed) return INITIAL_PRICING_SETTINGS;
+
+  const additionalsToUse = Array.isArray(parsed?.birthdays?.additionals) && parsed.birthdays.additionals.length > 0
+    ? parsed.birthdays.additionals.map((a: any) => ({
+        ...a,
+        branchId: a.branchId || (a.id?.includes('calle13') ? 'calle-13' : 'calle-5')
+      }))
+    : INITIAL_PRICING_SETTINGS.birthdays.additionals;
+
+  const rawMonths = Array.isArray(parsed?.birthdays?.monthlyBasePrices) ? parsed.birthdays.monthlyBasePrices : [];
+
+  const monthlyToUse: BirthdayMonthPrice[] = INITIAL_BIRTHDAY_MONTHS.map((defMonth) => {
+    const found = rawMonths.find((m: any) => m.monthIndex === defMonth.monthIndex);
+    if (!found) return defMonth;
+
+    const additionalsCalle5 = Array.isArray(found.additionalsCalle5) && found.additionalsCalle5.length > 0
+      ? found.additionalsCalle5
+      : (Array.isArray(found.additionals) && found.additionals.length > 0
+          ? found.additionals.filter((a: any) => a.branchId === 'calle-5' || (!a.branchId && a.id?.includes('calle5')))
+          : INITIAL_CALLE5_ADDITIONALS);
+
+    const additionalsCalle13 = Array.isArray(found.additionalsCalle13) && found.additionalsCalle13.length > 0
+      ? found.additionalsCalle13
+      : (Array.isArray(found.additionals) && found.additionals.length > 0
+          ? found.additionals.filter((a: any) => a.branchId === 'calle-13' || (!a.branchId && a.id?.includes('calle13')))
+          : INITIAL_CALLE13_ADDITIONALS);
+
+    return {
+      monthIndex: defMonth.monthIndex,
+      monthName: found.monthName || defMonth.monthName,
+      basePrice: typeof found.basePrice === 'number' ? found.basePrice : defMonth.basePrice,
+      basePriceCalle5: typeof found.basePriceCalle5 === 'number' ? found.basePriceCalle5 : (typeof found.basePrice === 'number' ? found.basePrice : defMonth.basePriceCalle5),
+      basePriceCalle13: typeof found.basePriceCalle13 === 'number' ? found.basePriceCalle13 : (typeof found.basePrice === 'number' ? found.basePrice : defMonth.basePriceCalle13),
+      additionalsCalle5,
+      additionalsCalle13,
+      additionals: found.additionals || defMonth.additionals,
+    };
+  });
+
+  return {
+    fitness: {
+      onceAWeek: typeof parsed?.fitness?.onceAWeek === 'number' ? parsed.fitness.onceAWeek : INITIAL_PRICING_SETTINGS.fitness.onceAWeek,
+      twiceAWeek: typeof parsed?.fitness?.twiceAWeek === 'number' ? parsed.fitness.twiceAWeek : INITIAL_PRICING_SETTINGS.fitness.twiceAWeek,
+    },
+    daycare: {
+      options: Array.isArray(parsed?.daycare?.options) && parsed.daycare.options.length > 0
+        ? parsed.daycare.options
+        : INITIAL_PRICING_SETTINGS.daycare.options,
+      dailyRates: Array.isArray(parsed?.daycare?.dailyRates) && parsed.daycare.dailyRates.length > 0
+        ? parsed.daycare.dailyRates
+        : INITIAL_PRICING_SETTINGS.daycare.dailyRates,
+    },
+    birthdays: {
+      depositAmount: typeof parsed?.birthdays?.depositAmount === 'number'
+        ? parsed.birthdays.depositAmount
+        : INITIAL_PRICING_SETTINGS.birthdays.depositAmount,
+      monthlyBasePrices: monthlyToUse,
+      additionals: additionalsToUse,
+    },
+    updatedAt: parsed?.updatedAt || new Date().toISOString(),
+  };
+};
+
 // -------------------------------------------------------------
 // PRICING & TARIFF SETTINGS (SUPER ADMIN ONLY)
 // -------------------------------------------------------------
@@ -1537,43 +1702,7 @@ export const getPricingSettings = (): PricingSettings => {
       return INITIAL_PRICING_SETTINGS;
     }
     const parsed = JSON.parse(data);
-    const hasFlyerAdditionals = Array.isArray(parsed?.birthdays?.additionals) &&
-      parsed.birthdays.additionals.some((a: BirthdayAdditionalPrice) => a.id === 'calle5_add_8' || a.price === 210000);
-    const additionalsToUse = hasFlyerAdditionals
-      ? parsed.birthdays.additionals
-      : INITIAL_PRICING_SETTINGS.birthdays.additionals;
-
-    const hasFlyerMonthly = Array.isArray(parsed?.birthdays?.monthlyBasePrices) &&
-      parsed.birthdays.monthlyBasePrices.some((m: BirthdayMonthPrice) => m.basePriceCalle5 === 600000 || m.basePriceCalle13 === 550000);
-    const monthlyToUse = hasFlyerMonthly
-      ? parsed.birthdays.monthlyBasePrices
-      : INITIAL_PRICING_SETTINGS.birthdays.monthlyBasePrices;
-
-    return {
-      fitness: {
-        onceAWeek: typeof parsed?.fitness?.onceAWeek === 'number' ? parsed.fitness.onceAWeek : INITIAL_PRICING_SETTINGS.fitness.onceAWeek,
-        twiceAWeek: typeof parsed?.fitness?.twiceAWeek === 'number' ? parsed.fitness.twiceAWeek : INITIAL_PRICING_SETTINGS.fitness.twiceAWeek,
-      },
-      daycare: {
-        options: Array.isArray(parsed?.daycare?.options) && parsed.daycare.options.length > 0
-          ? parsed.daycare.options
-          : INITIAL_PRICING_SETTINGS.daycare.options,
-        dailyRates: Array.isArray(parsed?.daycare?.dailyRates) && parsed.daycare.dailyRates.length > 0
-          ? INITIAL_PRICING_SETTINGS.daycare.dailyRates.map((defaultRate) => {
-              const found = parsed.daycare.dailyRates.find((r: DaycareDailyOption) => r.hours === defaultRate.hours);
-              return found && typeof found.price === 'number' ? found : defaultRate;
-            })
-          : INITIAL_PRICING_SETTINGS.daycare.dailyRates,
-      },
-      birthdays: {
-        depositAmount: typeof parsed?.birthdays?.depositAmount === 'number'
-          ? parsed.birthdays.depositAmount
-          : INITIAL_PRICING_SETTINGS.birthdays.depositAmount,
-        monthlyBasePrices: monthlyToUse,
-        additionals: additionalsToUse,
-      },
-      updatedAt: parsed?.updatedAt || new Date().toISOString(),
-    };
+    return normalizePricingSettings(parsed);
   } catch {
     return INITIAL_PRICING_SETTINGS;
   }
@@ -1612,7 +1741,8 @@ export const listenToPricingSettings = (onUpdate?: (settings: PricingSettings) =
       pricingDocRef,
       (snapshot) => {
         if (snapshot.exists()) {
-          const remoteData = snapshot.data() as PricingSettings;
+          const rawData = snapshot.data();
+          const remoteData = normalizePricingSettings(rawData);
           localStorage.setItem(PRICING_KEY, JSON.stringify(remoteData));
           if (onUpdate) onUpdate(remoteData);
           if (typeof window !== 'undefined') {

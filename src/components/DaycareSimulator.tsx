@@ -8,7 +8,7 @@ import {
   Star, 
   ShieldCheck,
   CalendarDays,
-  Sparkles,
+  SlidersHorizontal,
   Zap
 } from 'lucide-react';
 import { getPricingSettings, formatCurrency, listenToPricingSettings } from '../services/storage';
@@ -124,7 +124,7 @@ export const DaycareSimulator: React.FC<DaycareSimulatorProps> = ({ embedded = f
       <div className="space-y-2.5">
         <div className="flex items-center justify-between">
           <label className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-[#F2C700]" /> 1. ¿Cómo necesitás el servicio? Elegí la modalidad:
+            <SlidersHorizontal className="w-4 h-4 text-[#F2C700]" /> 1. ¿Cómo necesitás el servicio? Elegí la modalidad:
           </label>
           <span className="text-[11px] text-zinc-400 hidden sm:inline-block">
             Podés cambiar en cualquier momento

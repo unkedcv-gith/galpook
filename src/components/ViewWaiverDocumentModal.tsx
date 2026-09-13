@@ -99,7 +99,7 @@ export const ViewWaiverDocumentModal: React.FC<ViewWaiverDocumentModalProps> = (
                     Certificado de Términos Aceptados # {waiver.id || reservation.id}
                   </div>
                   <div className="text-zinc-400 font-medium">
-                    Firmado: {new Date(waiver.signedAt).toLocaleString('es-AR')}
+                    Firmado: {formatDateDDMMAAAA(waiver.signedAt)} - {new Date(waiver.signedAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs
                   </div>
                   <div className="text-zinc-400 font-medium">
                     Estado: <strong className="text-[#A3BA13]">Completado y Habilitado</strong>

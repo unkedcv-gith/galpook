@@ -1,19 +1,23 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Reservation, Branch, PricingSettings } from '../types';
-import { TIME_SLOTS, BRAND_INFO, HOLIDAYS } from '../data/initialData';
+import { TIME_SLOTS, BRAND_INFO, HOLIDAYS, INITIAL_CALLE5_ADDITIONALS, INITIAL_CALLE13_ADDITIONALS } from '../data/initialData';
 import { 
   getReservations, 
   getBlockedDates, 
   addReservation, 
   getBranches, 
   formatDateDDMMAAAA, 
+  formatDateWithWeekday,
   formatWhatsAppNumber,
   getPricingSettings,
   formatCurrency,
   listenToPricingSettings,
   isReservationExpired,
   getCurrentUser,
-  toggleBlockDate
+  toggleBlockDate,
+  isDateBlocked as checkIsDateBlocked,
+  isMonthBlocked as checkIsMonthBlocked,
+  listenToFirestoreCalendarBlocks
 } from '../services/storage';
 import { 
   Calendar as CalendarIcon, 
@@ -36,7 +40,8 @@ import {
   Info,
   Tag,
   DollarSign,
-  Sparkles
+  Lock,
+  AlertOctagon
 } from 'lucide-react';
 import { BranchComparisonModal } from './BranchComparisonModal';
 
@@ -119,11 +124,14 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const [pricing, setPricing] = useState<PricingSettings>(getPricingSettings);
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
 
+  const [blocksVersion, setBlocksVersion] = useState(0);
+
   const loadData = () => {
     setAllReservations(getReservations());
     setAllBlockedDates(getBlockedDates());
     setPricing(getPricingSettings());
     setCurrentUser(getCurrentUser());
+    setBlocksVersion((v) => v + 1);
   };
 
   useEffect(() => {
@@ -135,11 +143,16 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     window.addEventListener('storage', handleStorageUpdate);
     window.addEventListener('pricingUpdate', handleStorageUpdate);
     const unsub = listenToPricingSettings((updated) => setPricing(updated));
+    const unsubBlocks = listenToFirestoreCalendarBlocks(() => {
+      setAllBlockedDates(getBlockedDates());
+      setBlocksVersion((v) => v + 1);
+    });
     return () => {
       window.removeEventListener('storageUpdate', handleStorageUpdate);
       window.removeEventListener('storage', handleStorageUpdate);
       window.removeEventListener('pricingUpdate', handleStorageUpdate);
       unsub();
+      unsubBlocks();
     };
   }, []);
 
@@ -161,6 +174,21 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Sunday
+
+  // Full Month and Date block validations from Admin
+  const monthBlockInfo = useMemo(() => {
+    return checkIsMonthBlocked(year, month, selectedBranchId);
+  }, [year, month, selectedBranchId, allBlockedDates, blocksVersion]);
+
+  const dateBlockInfo = useMemo(() => {
+    if (!selectedDateStr) return { isBlocked: false, reason: '' };
+    return checkIsDateBlocked(selectedDateStr, selectedBranchId);
+  }, [selectedDateStr, selectedBranchId, allBlockedDates, blocksVersion]);
+
+  const isCurrentDateBlocked = useMemo(() => {
+    if (!selectedDateStr) return false;
+    return dateBlockInfo.isBlocked || blockedDates.some((b) => b.date === selectedDateStr);
+  }, [selectedDateStr, dateBlockInfo, blockedDates]);
 
   // Check if a date is in the past
   const isPastDate = (dayNumber: number) => {
@@ -323,9 +351,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
   const selectedDateFormatted = useMemo(() => {
     if (!selectedDateStr) return '';
-    const [y, m, d] = selectedDateStr.split('-');
-    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-    return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    return formatDateWithWeekday(selectedDateStr);
   }, [selectedDateStr]);
 
   return (
@@ -582,7 +608,7 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 {/* 10% Discount & Weekend Pricing Notice Banner */}
                 <div className="bg-gradient-to-r from-amber-500/15 via-[#F2C700]/20 to-amber-500/15 border-2 border-[#F2C700]/60 rounded-2xl p-3.5 sm:p-4 text-center space-y-1 shadow-lg">
                   <div className="flex items-center justify-center gap-2 text-[#F2C700] font-heading font-black text-xs sm:text-sm uppercase tracking-wide">
-                    <Sparkles className="w-4 h-4 animate-pulse" />
+                    <Tag className="w-4 h-4 text-[#F2C700]" />
                     <span>¡10% de Descuento de Lunes a Viernes!</span>
                   </div>
                   <p className="text-xs text-zinc-200 font-medium leading-relaxed max-w-xl mx-auto">
@@ -619,15 +645,65 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
 
                 {/* DYNAMIC BIRTHDAY PRICING FOR CURRENT SELECTED MONTH & ADDITIONALS */}
                 {(() => {
+                  const isMonthBlockedForBranch = monthBlockInfo.isBlocked;
+                  const isSelectedDateBlockedForBranch = selectedDateStr ? isCurrentDateBlocked : false;
+
+                  if (isMonthBlockedForBranch || isSelectedDateBlockedForBranch) {
+                    return (
+                      <div className="bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 border-red-500/40 rounded-2xl p-6 sm:p-8 text-center space-y-3 shadow-xl animate-in fade-in duration-300">
+                        <div className="w-12 h-12 rounded-2xl bg-red-500/15 border border-red-500/30 text-red-400 flex items-center justify-center mx-auto mb-2 shadow-inner">
+                          <Lock className="w-6 h-6" />
+                        </div>
+                        <h4 className="font-heading font-black text-white text-lg sm:text-xl uppercase tracking-wider">
+                          Sin datos para mostrar
+                        </h4>
+                        <p className="text-sm text-zinc-300 font-medium max-w-md mx-auto leading-relaxed">
+                          {isMonthBlockedForBranch
+                            ? `El mes de ${monthName} se encuentra deshabilitado o bloqueado para reservas en ${selectedBranch?.name || 'esta sucursal'}.`
+                            : `La fecha seleccionada (${selectedDateFormatted}) se encuentra deshabilitada o reservada.`}
+                        </p>
+                        {(monthBlockInfo.reason || dateBlockInfo.reason) && (
+                          <div className="pt-2">
+                            <span className="text-xs text-[#F2C700] font-bold bg-black/80 border border-white/15 px-3.5 py-1.5 rounded-xl inline-block shadow-sm">
+                              Motivo: {monthBlockInfo.reason || dateBlockInfo.reason}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
                   const currentMonthPricing = pricing.birthdays.monthlyBasePrices.find((m) => m.monthIndex === month);
                   const isCalle5 = selectedBranchId === 'calle-5';
                   const basePrice = currentMonthPricing
                     ? (isCalle5 ? (currentMonthPricing.basePriceCalle5 ?? currentMonthPricing.basePrice) : (currentMonthPricing.basePriceCalle13 ?? currentMonthPricing.basePrice))
                     : (isCalle5 ? 600000 : 550000);
 
-                  const branchAdditionals = isCalle5
-                    ? (currentMonthPricing?.additionalsCalle5 || pricing.birthdays.additionals.filter(a => a.branchId === 'calle-5'))
-                    : (currentMonthPricing?.additionalsCalle13 || pricing.birthdays.additionals.filter(a => a.branchId === 'calle-13'));
+                  const branchAdditionals = (() => {
+                    if (isCalle5) {
+                      if (currentMonthPricing?.additionalsCalle5 && currentMonthPricing.additionalsCalle5.length > 0) {
+                        return currentMonthPricing.additionalsCalle5;
+                      }
+                      if (currentMonthPricing?.additionals && currentMonthPricing.additionals.length > 0) {
+                        const filtered = currentMonthPricing.additionals.filter((a) => a.branchId === 'calle-5' || (!a.branchId && a.id?.includes('calle5')));
+                        if (filtered.length > 0) return filtered;
+                      }
+                      const globalFiltered = pricing.birthdays.additionals.filter((a) => a.branchId === 'calle-5' || (!a.branchId && a.id?.includes('calle5')));
+                      if (globalFiltered.length > 0) return globalFiltered;
+                      return INITIAL_CALLE5_ADDITIONALS;
+                    } else {
+                      if (currentMonthPricing?.additionalsCalle13 && currentMonthPricing.additionalsCalle13.length > 0) {
+                        return currentMonthPricing.additionalsCalle13;
+                      }
+                      if (currentMonthPricing?.additionals && currentMonthPricing.additionals.length > 0) {
+                        const filtered = currentMonthPricing.additionals.filter((a) => a.branchId === 'calle-13' || (!a.branchId && a.id?.includes('calle13')));
+                        if (filtered.length > 0) return filtered;
+                      }
+                      const globalFiltered = pricing.birthdays.additionals.filter((a) => a.branchId === 'calle-13' || (!a.branchId && a.id?.includes('calle13')));
+                      if (globalFiltered.length > 0) return globalFiltered;
+                      return INITIAL_CALLE13_ADDITIONALS;
+                    }
+                  })();
 
                   return (
                     <div className={`bg-gradient-to-br from-zinc-950/95 via-zinc-900/90 to-zinc-950/95 border-2 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl ${
@@ -914,6 +990,9 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     const isSelected = selectedDateStr === dateStr;
                     const isCalle5 = selectedBranchId === 'calle-5';
 
+                    const dayBlock = checkIsDateBlocked(dateStr, selectedBranchId);
+                    const isDayBlocked = monthBlockInfo.isBlocked || dayBlock.isBlocked || blockedDates.some((b) => b.date === dateStr);
+
                     return (
                       <button
                         key={dateStr}
@@ -927,6 +1006,8 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                             ? isCalle5
                               ? 'bg-[#ED3078] text-white font-black border-2 border-white shadow-[0_0_20px_rgba(237,48,120,0.85)] scale-105 z-10'
                               : 'bg-[#1EB8BF] text-black font-black border-2 border-white shadow-[0_0_20px_rgba(30,184,191,0.85)] scale-105 z-10'
+                            : isDayBlocked
+                            ? 'bg-red-950/40 text-red-300 border border-red-500/40 hover:bg-red-900/50'
                             : isCalle5
                             ? 'bg-zinc-900/70 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#ED3078]/70 active:bg-[#ED3078]/30'
                             : 'bg-zinc-900/70 hover:bg-zinc-800 text-white border border-white/10 hover:border-[#1EB8BF]/70 active:bg-[#1EB8BF]/30'
@@ -957,15 +1038,14 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
                     </span>
                   </div>
 
-
-
-                  {isDateBlocked ? (
-                    <div className="p-4 bg-zinc-950/80 border-2 border-[#ED3078] rounded-2xl text-center space-y-1">
-                      <p className="font-heading font-black text-sm text-[#ED3078] uppercase">
-                        Fecha No Disponible para Eventos
+                  {isCurrentDateBlocked || monthBlockInfo.isBlocked ? (
+                    <div className="p-5 bg-zinc-950/90 border-2 border-[#ED3078] rounded-2xl text-center space-y-2 shadow-lg">
+                      <p className="font-heading font-black text-sm text-[#ED3078] uppercase tracking-wider flex items-center justify-center gap-2">
+                        <AlertOctagon className="w-4 h-4" />
+                        Sin turnos disponibles para esta fecha
                       </p>
-                      <p className="text-xs text-zinc-300">
-                        Esta fecha se encuentra reservada para mantenimiento o evento exclusivo en {selectedBranch?.name}. Por favor selecciona otro día en el calendario.
+                      <p className="text-xs text-zinc-300 font-medium">
+                        {dateBlockInfo.reason || monthBlockInfo.reason || `Esta fecha o mes se encuentra deshabilitado para mantenimiento o evento exclusivo en ${selectedBranch?.name}. Por favor seleccioná otro día del calendario.`}
                       </p>
                     </div>
                   ) : (
