@@ -202,7 +202,7 @@ export const DaycareSimulator: React.FC<DaycareSimulatorProps> = ({ embedded = f
               </span>
             </div>
             <p className="text-xs text-zinc-300 font-normal leading-relaxed pt-1">
-              Para familias que necesitan cuidado regular de lunes a viernes. Elegí de <strong>1 a 5 días semanales</strong> y de <strong>1 a 4 horas por día</strong> con cupo garantizado.
+              Para familias que necesitan cuidado regular de lunes a viernes. Elegí de <strong>1 a 5 días semanales</strong> y las horas que necesites, si en el simulador no esta la opción que necesitas, nos escribís y armamos una a tu medida!
             </p>
           </button>
         </div>
