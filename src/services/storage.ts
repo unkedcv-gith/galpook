@@ -1818,7 +1818,11 @@ export const downloadBackupAsJSON = () => {
     JSON.stringify(backup, null, 2)
   )}`;
   const downloadAnchor = document.createElement('a');
-  const dateStr = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+  const dateStr = `${day}-${month}-${year}`;
   downloadAnchor.setAttribute('href', jsonString);
   downloadAnchor.setAttribute('download', `backup_elgalpon_${dateStr}.json`);
   document.body.appendChild(downloadAnchor);

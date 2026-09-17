@@ -2613,7 +2613,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onCloseAdmin }) 
               </h3>
               <ul className="text-xs text-zinc-300 space-y-2 list-disc list-inside">
                 <li>
-                  <strong className="text-white">Al hacer clic en "Descargar Backup Ahora":</strong> Se generará un archivo comprimido de texto estructurado con el nombre <code className="text-amber-400 bg-black/40 px-1.5 py-0.5 rounded">backup_elgalpon_AAAA-MM-DD.json</code>.
+                  <strong className="text-white">Al hacer clic en "Descargar Backup Ahora":</strong> Se generará un archivo comprimido de texto estructurado con el nombre <code className="text-amber-400 bg-black/40 px-1.5 py-0.5 rounded">backup_elgalpon_DD-MM-AAAA.json</code>.
                 </li>
                 <li>
                   <strong className="text-white">Almacenamiento seguro:</strong> Te recomendamos subir este archivo a tu Google Drive personal o guardarlo en una carpeta de tu computadora cada dos semanas.
