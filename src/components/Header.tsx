@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Calendar, Shield, Menu, X, Heart, MessageCircle } from 'lucide-react';
 import { BRAND_INFO } from '../data/initialData';
 import logoBlanca from '../assets/images/marca_el_galpon_blanca.svg';
@@ -66,6 +66,40 @@ export const Header: React.FC<HeaderProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
   const [isScrolled, setIsScrolled] = useState(false);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressTriggeredRef = useRef<boolean>(false);
+
+  const startPress = () => {
+    isLongPressTriggeredRef.current = false;
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressTriggeredRef.current = true;
+      if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate(50);
+        } catch {}
+      }
+      onOpenAdmin();
+    }, 1500); // 1.5 segundos manteniendo presionado
+  };
+
+  const cancelPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleLogoClick = () => {
+    if (isLongPressTriggeredRef.current) {
+      isLongPressTriggeredRef.current = false;
+      return;
+    }
+    setActiveSection('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Active section tracking on scroll
   useEffect(() => {
@@ -95,7 +129,12 @@ export const Header: React.FC<HeaderProps> = ({
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
   }, []);
 
   const scrollTo = (id: string) => {
@@ -111,19 +150,23 @@ export const Header: React.FC<HeaderProps> = ({
     <header className={`sticky top-0 z-40 w-full px-4 sm:px-6 lg:px-8 transition-all duration-300 bg-black/60 backdrop-blur-lg border-b border-white/10 ${isScrolled ? 'py-1.5' : 'py-3'}`}>
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-6 sm:gap-8">
         
-        {/* Logo (Free standing without container box) */}
+        {/* Logo with secret long-press for admin access */}
         <div 
-          onClick={() => {
-            setActiveSection('');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }} 
-          className="cursor-pointer flex items-center shrink-0 group py-0.5"
+          onClick={handleLogoClick}
+          onTouchStart={startPress}
+          onTouchEnd={cancelPress}
+          onTouchCancel={cancelPress}
+          onMouseDown={startPress}
+          onMouseUp={cancelPress}
+          onMouseLeave={cancelPress}
+          className="cursor-pointer flex items-center shrink-0 group py-0.5 select-none touch-manipulation"
           title="Ir al inicio"
         >
           <img 
             src={logoBlanca} 
             alt="El Galpón Logo" 
-            className={`w-auto object-contain transition-all duration-300 drop-shadow ${isScrolled ? 'h-9 sm:h-11 max-w-[150px] sm:max-w-[200px]' : 'h-11 sm:h-14 max-w-[190px] sm:max-w-[260px] group-hover:scale-105'}`} 
+            draggable={false}
+            className={`w-auto object-contain transition-all duration-300 drop-shadow pointer-events-none ${isScrolled ? 'h-9 sm:h-11 max-w-[150px] sm:max-w-[200px]' : 'h-11 sm:h-14 max-w-[190px] sm:max-w-[260px] group-hover:scale-105'}`} 
           />
         </div>
 
@@ -221,16 +264,19 @@ export const Header: React.FC<HeaderProps> = ({
               <Calendar className="w-4 h-4 text-black" /> RESERVAR FECHA DE CUMPLE
             </button>
 
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenAdmin();
-              }}
-              className="w-full bg-zinc-950 border-2 border-[#ED3078] text-white py-2.5 rounded-xl text-center text-xs font-black uppercase flex items-center justify-center gap-2 hover:bg-[#ED3078]/20 transition-all"
-            >
-              <Shield className="w-4 h-4 text-[#F2C700]" />
-              {isAdminLoggedIn ? 'IR AL PANEL DE ADMINISTRACIÓN' : 'ACCESO ADMINISTRADOR'}
-            </button>
+            {/* Only show Admin panel access in mobile menu if already logged in */}
+            {isAdminLoggedIn && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenAdmin();
+                }}
+                className="w-full bg-zinc-950 border-2 border-[#1EB8BF] text-[#1EB8BF] py-2.5 rounded-xl text-center text-xs font-black uppercase flex items-center justify-center gap-2 hover:bg-[#1EB8BF]/20 transition-all cursor-pointer"
+              >
+                <Shield className="w-4 h-4 text-[#1EB8BF]" />
+                IR AL PANEL DE ADMINISTRACIÓN
+              </button>
+            )}
           </div>
         </div>
       )}
